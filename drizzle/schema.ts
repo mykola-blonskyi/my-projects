@@ -11,8 +11,9 @@ import {
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  email: text('email').notNull().unique(),
   name: text('name'),
+  email: text('email').notNull().unique(),
+  emailVerified: timestamp('email_verified', { mode: 'date' }),
   image: text('image'),
   role: text('role').default('user').notNull(),
   locale: text('locale').default('en').notNull(),
@@ -50,22 +51,22 @@ export const projectAccess = pgTable(
 );
 
 // ─── Auth.js — Accounts ───────────────────────────────────────────────────────
+// Column property names use snake_case to match @auth/drizzle-adapter type expectations.
 
 export const accounts = pgTable('accounts', {
-  id: text('id').primaryKey(),
   userId: uuid('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   type: text('type').notNull(),
   provider: text('provider').notNull(),
   providerAccountId: text('provider_account_id').notNull(),
-  refreshToken: text('refresh_token'),
-  accessToken: text('access_token'),
-  expiresAt: integer('expires_at'),
-  tokenType: text('token_type'),
+  refresh_token: text('refresh_token'),
+  access_token: text('access_token'),
+  expires_at: integer('expires_at'),
+  token_type: text('token_type'),
   scope: text('scope'),
-  idToken: text('id_token'),
-  sessionState: text('session_state'),
+  id_token: text('id_token'),
+  session_state: text('session_state'),
 });
 
 // ─── Auth.js — Sessions ───────────────────────────────────────────────────────

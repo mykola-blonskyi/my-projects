@@ -1,0 +1,54 @@
+{
+  "HomePage": {
+    "title": "Hub",
+    "subtitle": "Personal project directory at blonskyi.dev",
+    "welcomeCard": {
+      "title": "Welcome",
+      "description": "Your personal project hub",
+      "body": "Sign in with your Google account to access your projects.",
+      "cta": "Sign in with Google"
+    }
+  },
+  "LoginPage": {
+    "title": "Sign in",
+    "subtitle": "Sign in to access your projects",
+    "googleButton": "Continue with Google",
+    "terms": "By signing in, you agree to our terms of service."
+  },
+  "ProjectsPage": {
+    "title": "Projects",
+    "subtitle": "Your project directory",
+    "emptyState": "No projects found.",
+    "addProject": "Add project",
+    "viewProject": "View project"
+  },
+  "Nav": {
+    "home": "Home",
+    "projects": "Projects",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "ThemeSwitcher": {
+    "light": "Light",
+    "dark": "Dark",
+    "rose": "Rose",
+    "toggleTheme": "Toggle theme"
+  },
+  "LocaleSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "ru": "Русский",
+    "uk": "Українська",
+    "es": "Español"
+  },
+  "Common": {
+    "loading": "Loading...",
+    "error": "Something went wrong.",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back"
+  }
+}

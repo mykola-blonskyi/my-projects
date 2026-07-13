@@ -65,5 +65,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      // After successful login, redirect to the user's locale home
+      // Locale preference persistence is handled in ticket 9
+      // For now redirect to default locale home
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      return `${baseUrl}/en/`;
+    },
   },
 });

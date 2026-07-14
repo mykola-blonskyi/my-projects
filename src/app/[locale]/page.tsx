@@ -1,10 +1,18 @@
+import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
+import { auth } from '@/features/auth/lib/auth'
 import { Header } from '@/shared/ui/header'
 import { ProjectGrid } from '@/features/projects/components/ProjectGrid'
-import { getAllProjects } from '@/features/projects/lib/queries'
+import { getProjectsForUser } from '@/features/projects/lib/queries'
 
 export default async function HomePage() {
-  const [projects, t] = await Promise.all([getAllProjects(), getTranslations('ProjectsPage')])
+  const session = await auth()
+  if (!session?.user) redirect('/en/login')
+
+  const [projects, t] = await Promise.all([
+    getProjectsForUser(session.user.id, session.user.role),
+    getTranslations('ProjectsPage'),
+  ])
 
   return (
     <>

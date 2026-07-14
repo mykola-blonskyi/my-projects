@@ -5,6 +5,7 @@ import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { ThemeProvider } from '@/shared/ui/theme-provider'
 import { locales, type Locale } from '@/shared/lib/i18n/config'
+import { auth } from '@/features/auth/lib/auth'
 import '../globals.css'
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] })
@@ -22,20 +23,20 @@ interface LocaleLayoutProps {
 export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
   const { locale } = await params
 
-  // Validate locale
   if (!locales.includes(locale as Locale)) {
     notFound()
   }
 
-  const messages = await getMessages()
+  const [messages, session] = await Promise.all([getMessages(), auth()])
+  const savedTheme = session?.user?.theme ?? 'light'
 
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          enableSystem
+          defaultTheme={savedTheme}
+          enableSystem={false}
           themes={['light', 'dark', 'theme-rose']}
           disableTransitionOnChange
         >

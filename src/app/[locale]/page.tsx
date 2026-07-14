@@ -1,31 +1,21 @@
-import { useTranslations } from 'next-intl'
-import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import { getTranslations } from 'next-intl/server'
+import { Header } from '@/shared/ui/header'
+import { ProjectGrid } from '@/features/projects/components/ProjectGrid'
+import { getAllProjects } from '@/features/projects/lib/queries'
 
-export default function HomePage() {
-  const t = useTranslations('HomePage')
+export default async function HomePage() {
+  const [projects, t] = await Promise.all([getAllProjects(), getTranslations('ProjectsPage')])
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-8">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
-          <p className="text-muted-foreground">{t('subtitle')}</p>
+    <>
+      <Header />
+      <main className="mx-auto max-w-5xl px-4 py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t('subtitle')}</p>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('welcomeCard.title')}</CardTitle>
-            <CardDescription>{t('welcomeCard.description')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {t('welcomeCard.body')}
-            </p>
-            <Button className="w-full">{t('welcomeCard.cta')}</Button>
-          </CardContent>
-        </Card>
-      </div>
-    </main>
+        <ProjectGrid projects={projects} />
+      </main>
+    </>
   )
 }

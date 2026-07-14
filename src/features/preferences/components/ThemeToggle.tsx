@@ -3,6 +3,7 @@
 import { useTheme } from 'next-themes'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/shared/ui/button'
+import { setTheme as persistTheme } from '../actions/setTheme'
 
 const THEMES = ['light', 'dark', 'theme-rose'] as const
 
@@ -12,8 +13,9 @@ export function ThemeToggle() {
 
   function cycleTheme() {
     const currentIndex = THEMES.indexOf(theme as (typeof THEMES)[number])
-    const nextIndex = (currentIndex + 1) % THEMES.length
-    setTheme(THEMES[nextIndex])
+    const nextTheme = THEMES[(currentIndex + 1) % THEMES.length]
+    setTheme(nextTheme)        // immediate client-side update
+    persistTheme(nextTheme)    // persist to DB in background
   }
 
   function getLabel() {

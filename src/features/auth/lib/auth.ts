@@ -55,6 +55,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.userId = user.id;
         token.role =
           user.email === process.env.OWNER_EMAIL ? 'owner' : 'user';
+
+        // Read saved preferences so post-login redirect and SSR theme are correct
+        const [dbUser] = await db
+          .select({ locale: users.locale, theme: users.theme })
+          .from(users)
+          .where(eq(users.id, user.id!))
+          .limit(1);
+
+        token.locale = dbUser?.locale ?? 'en';
+        token.theme = dbUser?.theme ?? 'light';
       }
       return token;
     },
@@ -62,17 +72,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token) {
         session.user.id = token.userId as string;
         session.user.role = token.role as string;
+        session.user.locale = token.locale as string;
+        session.user.theme = token.theme as string;
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // After successful login, redirect to the user's locale home
-      // Locale preference persistence is handled in ticket 9
-      // For now redirect to default locale home
-      if (url.startsWith(baseUrl)) {
-        return url;
+      // After sign-in, go through post-login handler which reads locale from DB
+      if (url === baseUrl || url === `${baseUrl}/`) {
+        return `${baseUrl}/api/auth/post-login`;
       }
-      return `${baseUrl}/en/`;
+      if (url.startsWith(baseUrl)) return url;
+      return `${baseUrl}/api/auth/post-login`;
     },
   },
 });

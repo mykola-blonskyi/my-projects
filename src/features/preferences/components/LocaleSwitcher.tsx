@@ -1,33 +1,29 @@
 'use client'
 
 import { useLocale, useTranslations } from 'next-intl'
-import { usePathname, useRouter } from 'next/navigation'
+import { useTransition } from 'react'
 import { locales, type Locale } from '@/shared/lib/i18n/config'
+import { setLocale } from '../actions/setLocale'
 
 export function LocaleSwitcher() {
   const locale = useLocale()
-  const router = useRouter()
-  const pathname = usePathname()
   const t = useTranslations('LocaleSwitcher')
+  const [isPending, startTransition] = useTransition()
 
   function handleChange(event: React.ChangeEvent<HTMLSelectElement>) {
     const nextLocale = event.target.value as Locale
-
-    // Replace the current locale prefix in the pathname
-    const segments = pathname.split('/')
-    // segments[0] is '', segments[1] is locale
-    segments[1] = nextLocale
-    const nextPathname = segments.join('/')
-
-    router.push(nextPathname)
+    startTransition(() => {
+      setLocale(nextLocale)
+    })
   }
 
   return (
     <select
       value={locale}
       onChange={handleChange}
+      disabled={isPending}
       aria-label={t('label')}
-      className="rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      className="rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50"
     >
       {locales.map((loc) => (
         <option key={loc} value={loc}>

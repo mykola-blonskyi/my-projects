@@ -1,0 +1,18 @@
+services:
+  hub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/mykola-blonskyi/my-projects:latest
+    container_name: hub
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    networks:
+      - db_network
+
+networks:
+  db_network:
+    external: true

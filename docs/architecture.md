@@ -63,7 +63,7 @@ scaffold (docs/, boilerplates/, snippets/, etc.) reused across all future subdom
 
 - **Google OAuth** — identity provider, used only for authentication (no Google API calls beyond profile)
 - **Cloudflare CDN** — DNS proxy, SSL edge termination (SSL mode: Full), DDoS protection
-- **Coolify** — self-hosted PaaS managing Docker containers, reverse proxy (Caddy), SSL certs, deployments
+- **Coolify** — self-hosted PaaS managing Docker containers, reverse proxy (Traefik), SSL certs, deployments
 - **GitHub Actions → GHCR** — CI/CD: build Docker image on push to `main`, push to GitHub Container Registry, trigger Coolify webhook
 
 ---
@@ -99,8 +99,8 @@ User → todo.blonskyi.dev → subdomain middleware
 ## Deployment
 
 - **VPS**: Single server running Docker
-- **Network**: Shared Docker network (`shared`) — all services can reach PostgreSQL
-- **Reverse proxy**: Coolify-managed Caddy — routes subdomains to containers, handles internal TLS
+- **Network**: Shared Docker network (`db_network`) — all services can reach PostgreSQL
+- **Reverse proxy**: Coolify-managed Traefik — routes subdomains to containers, handles internal TLS
 - **CDN**: Cloudflare in front — orange-cloud proxy ON, SSL mode Full
 - **Registry**: GitHub Container Registry (GHCR) — `ghcr.io/mykola-blonskyi/my-projects`
 - **Deploy trigger**: Coolify webhook called by GitHub Actions after successful build
@@ -111,17 +111,18 @@ services:
   hub:
     image: ghcr.io/mykola-blonskyi/my-projects:latest
     networks:
-      - shared
+      - db_network
     environment:
       - DATABASE_URL
       - AUTH_SECRET
+      - AUTH_TRUST_HOST
       - GOOGLE_CLIENT_ID
       - GOOGLE_CLIENT_SECRET
       - OWNER_EMAIL
       - API_URL=https://blonskyi.dev
 
 networks:
-  shared:
+  db_network:
     external: true
 ```
 
@@ -153,7 +154,7 @@ COOKIE_DOMAIN=.blonskyi.dev
 - `.env.example` committed with placeholder values
 
 **Cloudflare:**
-- SSL mode: Full (Caddy handles internal cert, Cloudflare handles public edge)
+- SSL mode: Full (Traefik handles internal cert, Cloudflare handles public edge)
 - Cache-Control: `no-store` on all authenticated pages
 - Real IP forwarded via `CF-Connecting-IP` → `X-Real-IP`
 

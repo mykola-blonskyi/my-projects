@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deployment &amp; CI/CD Runbook — Hub App</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --bg-alt: #f6f7f9;
+    --text: #1a1d23;
+    --text-muted: #5b6270;
+    --border: #e3e5e9;
+    --accent: #2f6feb;
+    --accent-bg: #eaf1ff;
+    --code-bg: #0f1117;
+    --code-text: #e6e8ee;
+    --warn-bg: #fff8e6;
+    --warn-border: #f0c750;
+    --ok-bg: #eafbf1;
+    --ok-border: #59c98a;
+    --decision-bg: #f3edff;
+    --decision-border: #9b7bf0;
+    --table-head: #eef1f5;
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161a;
+    --bg-alt: #1b1e24;
+    --text: #e7e9ee;
+    --text-muted: #9aa1ad;
+    --border: #2c303a;
+    --accent: #7fa8ff;
+    --accent-bg: #1c2740;
+    --code-bg: #0b0d12;
+    --code-text: #e6e8ee;
+    --warn-bg: #2a2413;
+    --warn-border: #a5851f;
+    --ok-bg: #142a1e;
+    --ok-border: #2f8a5c;
+    --decision-bg: #221c33;
+    --decision-border: #6c4fd6;
+    --table-head: #22262f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14161a;
+      --bg-alt: #1b1e24;
+      --text: #e7e9ee;
+      --text-muted: #9aa1ad;
+      --border: #2c303a;
+      --accent: #7fa8ff;
+      --accent-bg: #1c2740;
+      --code-bg: #0b0d12;
+      --code-text: #e6e8ee;
+      --warn-bg: #2a2413;
+      --warn-border: #a5851f;
+      --ok-bg: #142a1e;
+      --ok-border: #2f8a5c;
+      --decision-bg: #221c33;
+      --decision-border: #6c4fd6;
+      --table-head: #22262f;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .layout {
+    display: flex;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  nav.toc {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    flex: 0 0 250px;
+    padding: 2rem 1rem 2rem 1.5rem;
+    border-right: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  nav.toc a {
+    display: block;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 0.25rem 0;
+    border-radius: 4px;
+  }
+  nav.toc a:hover { color: var(--accent); }
+  nav.toc .phase-label {
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin: 1.1rem 0 0.3rem;
+    font-weight: 600;
+  }
+  main {
+    flex: 1;
+    min-width: 0;
+    padding: 2.5rem 3rem 6rem;
+  }
+  header.hero {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  header.hero h1 {
+    font-size: 1.9rem;
+    margin: 0 0 0.4rem;
+  }
+  header.hero p {
+    color: var(--text-muted);
+    margin: 0;
+    max-width: 60ch;
+  }
+  .badges { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  section.phase { margin-bottom: 3.5rem; }
+  h2.phase-title {
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 1.5rem;
+  }
+  h2.phase-title .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.95rem;
+    flex: none;
+  }
+  h3 { font-size: 1.15rem; margin-top: 2rem; }
+  h4 { font-size: 1rem; margin-top: 1.4rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.8rem; }
+
+  .file-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 1.2rem 0;
+    overflow: hidden;
+    background: var(--bg-alt);
+  }
+  .file-card .file-head {
+    padding: 0.55rem 1rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    background: var(--table-head);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .file-head .tag {
+    font-family: -apple-system, sans-serif;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  pre {
+    margin: 0;
+    padding: 1rem;
+    overflow-x: auto;
+    background: var(--code-bg);
+    color: var(--code-text);
+    font-size: 0.82rem;
+    line-height: 1.55;
+  }
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  p code, li code, td code {
+    background: var(--table-head);
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.88em;
+  }
+
+  .callout {
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    margin: 1.2rem 0;
+    border: 1px solid;
+    font-size: 0.92rem;
+  }
+  .callout.warn { background: var(--warn-bg); border-color: var(--warn-border); }
+  .callout.ok { background: var(--ok-bg); border-color: var(--ok-border); }
+  .callout.decision { background: var(--decision-bg); border-color: var(--decision-border); }
+  .callout strong.label {
+    display: block;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+    opacity: 0.85;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.88rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th { background: var(--table-head); }
+
+  ol.steps { padding-left: 1.3rem; }
+  ol.steps li { margin-bottom: 0.6rem; }
+
+  .overflow-x { overflow-x: auto; }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  footer ul { padding-left: 1.2rem; }
+
+  @media (max-width: 900px) {
+    .layout { display: block; }
+    nav.toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 1.5rem 1.2rem 4rem; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="toc">
+    <a href="#overview"><strong>Overview</strong></a>
+
+    <div class="phase-label">Phase 1 — Containerize</div>
+    <a href="#p1-dockerfile">Dockerfile</a>
+    <a href="#p1-entrypoint">Entrypoint script</a>
+    <a href="#p1-migrate">Migration runner</a>
+    <a href="#p1-nextconfig">next.config.ts</a>
+    <a href="#p1-middleware">Middleware health exclusion</a>
+    <a href="#p1-health">Health route</a>
+    <a href="#p1-compose">docker-compose.yml</a>
+    <a href="#p1-env">.env.example</a>
+    <a href="#p1-local-test">Local smoke test</a>
+
+    <div class="phase-label">VPS Runbook (manual)</div>
+    <a href="#vps-db">A. Create DB + role</a>
+    <a href="#vps-coolify">B. Coolify app setup</a>
+    <a href="#vps-envvars">C. Env vars table</a>
+    <a href="#vps-seed">D. Migrations + seed</a>
+    <a href="#vps-oauth">E. Google OAuth redirect</a>
+
+    <div class="phase-label">Phase 2 — CI/CD</div>
+    <a href="#p2-e2e">Playwright e2e setup</a>
+    <a href="#p2-workflow">GitHub Actions workflow</a>
+    <a href="#p2-webhook">Coolify webhook wiring</a>
+    <a href="#p2-handoff">Phase 1 → Phase 2 handoff</a>
+
+    <div class="phase-label">Wrap-up</div>
+    <a href="#docs-fixes">Docs corrections needed</a>
+    <a href="#implemented">What's already implemented</a>
+  </nav>
+
+  <main>
+    <header class="hero" id="overview">
+      <h1>Deployment &amp; CI/CD Runbook — Hub App</h1>
+      <p>
+        Containerizing the Next.js hub app, deploying it manually to the VPS via Coolify the first time,
+        then wiring GitHub Actions so every future push to <code>main</code> auto-deploys — but only after
+        lint, typecheck, integration tests, and e2e tests all pass.
+      </p>
+      <div class="badges">
+        <span class="badge">Node 22 Alpine</span>
+        <span class="badge">Coolify + Traefik</span>
+        <span class="badge">Drizzle ORM</span>
+        <span class="badge">GHCR</span>
+        <span class="badge">Playwright e2e</span>
+      </div>
+    </header>
+
+    <div class="callout ok">
+      <strong class="label">Confirmed facts (not assumptions)</strong>
+      VPS: Ubuntu 24.04, Docker 29.6, <strong>Coolify 4.1.2 already installed</strong> running
+      <strong>Traefik v3.6</strong> as reverse proxy (not Caddy, despite the original docs). A hand-run
+      compose stack at <code>/home/mykola/infra/db/docker-compose.yml</code> runs <code>postgres:16</code>
+      and <code>pgadmin</code> on a network literally named <code>db_network</code> (not <code>shared</code>,
+      despite the original docs) — Postgres is bound only to <code>127.0.0.1:5432</code> on the host, reachable
+      from other containers on <code>db_network</code> via Docker DNS name <code>postgres</code>.
+    </div>
+
+    <div class="callout ok">
+      <strong class="label">Status</strong>
+      All Phase 1 + Phase 2 code below has been implemented in this repo and verified locally: Docker image
+      builds, container boots, migrations run automatically, <code>/api/health</code> returns 200, the
+      unauthenticated redirect works, and all 4 Playwright e2e tests pass against the real container. See
+      <a href="#implemented">What's already implemented</a> at the bottom. The VPS runbook steps (DB creation,
+      Coolify UI setup, secrets, OAuth redirect) are still yours to run manually.
+    </div>
+
+    <!-- ============================= PHASE 1 ============================= -->
+    <section class="phase">
+      <h2 class="phase-title"><span class="num">1</span> Containerize &amp; manual first deploy</h2>
+
+      <h3 id="p1-dockerfile">Dockerfile</h3>
+      <p>Multi-stage build, Node 22 Alpine. <code>NODE_ENV=production</code> is set only in the final
+        <code>runner</code> stage — setting it earlier would make <code>pnpm install</code> skip devDependencies
+        that <code>next build</code> needs (<code>typescript</code>, <code>tailwindcss</code>, etc.).</p>
+      <div class="file-card">
+        <div class="file-head"><span>Dockerfile</span><span class="tag">repo root · implemented</span></div>
+        <pre><code># syntax=docker/dockerfile:1
+
+# ---- Base -------------------------------------------------------------------
+FROM node:22-alpine AS base
+
+# libc6-compat is required by some native Node addons on Alpine (e.g. sharp);
+# python3/make/g++ are a safety net in case any dependency needs to build from
+# source rather than use a prebuilt binary.
+RUN apk add --no-cache libc6-compat python3 make g++
+
+# Pin the exact pnpm major used to generate pnpm-lock.yaml (lockfileVersion 9.0)
+RUN corepack enable &amp;&amp; corepack prepare pnpm@9.15.0 --activate
+
+WORKDIR /app
+
+# ---- Dependencies (cached separately from source changes) -------------------
+FROM base AS deps
+COPY package.json pnpm-lock.yaml .npmrc pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# ---- Build --------------------------------------------------------------------
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm build
+
+# drizzle-orm/postgres-js/migrator is never imported anywhere in the app
+# itself (only in our own migrate script below), so Next's standalone output
+# tracing drops that submodule. Materialize the two pure-JS, zero-dependency
+# packages the migration entrypoint needs, dereferencing pnpm's symlinks so
+# they survive being copied into the slim runtime stage on their own.
+RUN mkdir -p /app/runtime-only/node_modules/postgres /app/runtime-only/node_modules/drizzle-orm \
+  &amp;&amp; cp -rL /app/node_modules/postgres/. /app/runtime-only/node_modules/postgres/ \
+  &amp;&amp; cp -rL /app/node_modules/drizzle-orm/. /app/runtime-only/node_modules/drizzle-orm/
+
+# ---- Runtime (lean, production-only) -----------------------------------------
+FROM node:22-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+
+RUN addgroup --system --gid 1001 nodejs \
+  &amp;&amp; adduser --system --uid 1001 nextjs
+
+# Next.js standalone server + its minimal traced node_modules
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+# No public/ directory exists yet. If one is added later, uncomment:
+# COPY --from=builder /app/public ./public
+
+# Drizzle migration assets: SQL files + our small runtime migration script
+COPY --from=builder /app/drizzle/migrations ./drizzle/migrations
+COPY --from=builder /app/drizzle/migrate.mjs ./drizzle/migrate.mjs
+
+# Explicit prod-only packages needed by drizzle/migrate.mjs (see builder stage)
+COPY --from=builder /app/runtime-only/node_modules/postgres ./node_modules/postgres
+COPY --from=builder /app/runtime-only/node_modules/drizzle-orm ./node_modules/drizzle-orm
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+USER nextjs
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["node", "server.js"]</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <strong class="label">Real issue hit &amp; fixed during verification</strong>
+        <code>pnpm-workspace.yaml</code> had no <code>packages:</code> field. Locally-installed pnpm 11
+        tolerates this, but pnpm 9.15.0 (pinned in the Dockerfile via corepack) fails with
+        <code>ERROR packages field missing or empty</code>. Fixed by adding:
+        <pre><code>packages:
+  - '.'</code></pre>
+        to the top of <code>pnpm-workspace.yaml</code>. Confirmed via an isolated repro before touching the
+        real file.
+      </div>
+
+      <h3 id="p1-entrypoint">Entrypoint script</h3>
+      <div class="file-card">
+        <div class="file-head"><span>docker-entrypoint.sh</span><span class="tag">repo root · implemented</span></div>
+        <pre><code>#!/bin/sh
+set -e
+
+echo "Running Drizzle migrations..."
+node drizzle/migrate.mjs
+
+echo "Starting Next.js server..."
+exec "$@"</code></pre>
+      </div>
+
+      <h3 id="p1-migrate">Migration runner (no drizzle-kit needed at runtime)</h3>
+      <p>Standard Drizzle-recommended pattern: <code>drizzle-orm/postgres-js/migrator</code> ships inside the
+        already-production <code>drizzle-orm</code> dependency, so no dev tooling needs to be bundled into the
+        runtime image.</p>
+      <div class="file-card">
+        <div class="file-head"><span>drizzle/migrate.mjs</span><span class="tag">implemented</span></div>
+        <pre><code>import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+
+async function run() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    console.error('DATABASE_URL is not set — cannot run migrations.');
+    process.exit(1);
+  }
+
+  const sql = postgres(connectionString, { max: 1 });
+  const db = drizzle(sql);
+
+  console.log('Running Drizzle migrations...');
+  await migrate(db, { migrationsFolder: './drizzle/migrations' });
+  console.log('Migrations complete.');
+
+  await sql.end();
+}
+
+run().catch((err) =&gt; {
+  console.error('Migration failed:', err);
+  process.exit(1);
+});</code></pre>
+      </div>
+
+      <h3 id="p1-nextconfig">next.config.ts — one-line addition</h3>
+      <div class="file-card">
+        <div class="file-head"><span>next.config.ts</span><span class="tag">implemented</span></div>
+        <pre><code>import type { NextConfig } from 'next'
+import createNextIntlPlugin from 'next-intl/plugin'
+
+const withNextIntl = createNextIntlPlugin('./src/shared/lib/i18n/request.ts')
+
+const nextConfig: NextConfig = {
+  output: 'standalone', // required for the lean multi-stage Docker build
+}
+
+export default withNextIntl(nextConfig)</code></pre>
+      </div>
+
+      <h3 id="p1-middleware">Middleware — exclude the health endpoint</h3>
+      <p>Without this, an unauthenticated health probe to <code>/api/health</code> gets redirected to the login
+        page HTML instead of returning <code>200</code>, breaking both the Docker <code>HEALTHCHECK</code> and
+        Coolify's own health monitoring.</p>
+      <div class="file-card">
+        <div class="file-head"><span>src/middleware.ts</span><span class="tag">implemented</span></div>
+        <pre><code>if (
+  pathname.startsWith('/api/auth') ||
+  pathname.startsWith('/api/health') ||   // added
+  pathname.startsWith('/_next') ||
+  pathname.startsWith('/_vercel') ||
+  /\.[^/]+$/.test(pathname)
+) {
+  return NextResponse.next()
+}</code></pre>
+      </div>
+
+      <h3 id="p1-health">Health route</h3>
+      <p>Deliberately DB-free (liveness only) — this is also what the e2e smoke tests hit to confirm the Docker
+        image actually boots and the server is serving requests.</p>
+      <div class="file-card">
+        <div class="file-head"><span>src/app/api/health/route.ts</span><span class="tag">implemented</span></div>
+        <pre><code>import { NextResponse } from 'next/server'
+
+export const dynamic = 'force-dynamic'
+
+export async function GET() {
+  return NextResponse.json({ status: 'ok' }, { status: 200 })
+}</code></pre>
+      </div>
+
+      <h3 id="p1-compose">docker-compose.yml</h3>
+      <p>Single <code>hub</code> service, joining the real pre-existing <code>db_network</code> — not creating
+        a new one. This same file is later handed to Coolify unmodified as its "Docker Compose" resource
+        source.</p>
+      <div class="file-card">
+        <div class="file-head"><span>docker-compose.yml</span><span class="tag">repo root · implemented</span></div>
+        <pre><code>services:
+  hub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ghcr.io/mykola-blonskyi/my-projects:latest
+    container_name: hub
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    networks:
+      - db_network
+
+networks:
+  db_network:
+    external: true</code></pre>
+      </div>
+
+      <h3 id="p1-env">.env.example — full updated contents</h3>
+      <div class="file-card">
+        <div class="file-head"><span>.env.example</span><span class="tag">implemented</span></div>
+        <pre><code># Database
+DATABASE_URL=
+
+# Auth.js
+AUTH_SECRET=
+# Required when self-hosting behind a reverse proxy (Traefik/Coolify) — trusts
+# X-Forwarded-Host/Proto so Auth.js can detect the correct callback URL.
+# See https://authjs.dev/getting-started/deployment
+AUTH_TRUST_HOST=true
+
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Owner
+OWNER_EMAIL=</code></pre>
+      </div>
+
+      <h3 id="p1-local-test">Local smoke test — verified working end to end</h3>
+      <div class="file-card">
+        <div class="file-head"><span>verified commands</span><span class="tag">shell — actually run this session</span></div>
+        <pre><code>docker network create db_network
+docker run -d --name postgres --network db_network \
+  -e POSTGRES_USER=hub -e POSTGRES_PASSWORD=hub_local_dev -e POSTGRES_DB=hub \
+  -p 127.0.0.1:5444:5432 postgres:16-alpine
+
+# .env filled in with dummy Google creds + AUTH_TRUST_HOST=true
+
+docker compose build   # ✓ succeeded
+docker compose up -d   # ✓ container started
+
+docker logs hub
+# Running Drizzle migrations...
+# Migrations complete.
+# Starting Next.js server...
+#  ✓ Ready in 29ms
+
+curl http://localhost:3000/api/health   # → {"status":"ok"}
+curl -i http://localhost:3000/          # → 307 redirect to /en/login
+
+pnpm exec playwright test               # ✓ all 4 e2e tests passed
+
+# cleanup:
+docker compose down
+docker rm -f postgres
+docker network rm db_network</code></pre>
+      </div>
+    </section>
+
+    <!-- ============================= VPS RUNBOOK ============================= -->
+    <section class="phase">
+      <h2 class="phase-title"><span class="num">✋</span> VPS Runbook — manual, hand-executed</h2>
+
+      <h3 id="vps-db">A. Create an isolated database + role for hub</h3>
+      <div class="file-card">
+        <div class="file-head"><span>SSH + psql</span><span class="tag">shell</span></div>
+        <pre><code>ssh mykola@&lt;vps-host&gt;
+cat /home/mykola/infra/db/.env        # note the existing POSTGRES_USER (superuser) + POSTGRES_PASSWORD
+cd /home/mykola/infra/db
+docker compose exec postgres psql -U "$POSTGRES_USER" -d postgres</code></pre>
+      </div>
+      <p>Inside <code>psql</code> (generate the password beforehand with <code>openssl rand -base64 24</code>):</p>
+      <div class="file-card">
+        <div class="file-head"><span>SQL</span><span class="tag">run inside psql</span></div>
+        <pre><code>CREATE ROLE hub WITH LOGIN PASSWORD 'REPLACE_WITH_A_STRONG_RANDOM_PASSWORD';
+CREATE DATABASE hub OWNER hub;
+\c hub
+GRANT ALL PRIVILEGES ON SCHEMA public TO hub;
+\q</code></pre>
+      </div>
+      <div class="callout ok">
+        <strong class="label">Result</strong>
+        A dedicated database + role, isolated from anything else already in that Postgres instance. Connection
+        string for later steps: <code>postgresql://hub:&lt;password&gt;@postgres:5432/hub</code>
+        (<code>postgres</code> resolves via Docker DNS once the hub container joins <code>db_network</code>).
+      </div>
+
+      <h3 id="vps-coolify">B. Coolify app setup — Docker Compose build pack</h3>
+      <div class="callout decision">
+        <strong class="label">Decision</strong>
+        Use Coolify's <strong>Docker Compose</strong> resource type, not "Dockerfile". The Dockerfile build pack
+        auto-generates its own compose file with no way to attach an extra external network. Docker Compose
+        lets you supply the file above as-is — Coolify injects Traefik labels + its internal network for
+        routing, but preserves the <code>db_network: external: true</code> block.
+      </div>
+      <ol class="steps">
+        <li>Coolify dashboard → your Server/Project → <strong>+ New Resource</strong>.</li>
+        <li>Source: your Git repository (<code>my-projects</code>), branch <code>main</code>. Add a deploy key
+          or GitHub App connection under Coolify's Sources settings first if it doesn't already have access.</li>
+        <li>Build Pack: <strong>Docker Compose</strong>, pointed at <code>docker-compose.yml</code> at the repo
+          root.</li>
+        <li>General settings → <strong>Ports Exposes</strong>: <code>3000</code> (matches the Dockerfile's
+          <code>EXPOSE 3000</code>).</li>
+        <li>Domains: <code>https://blonskyi.dev</code>. Coolify auto-generates the Traefik router and requests a
+          Let's Encrypt certificate once DNS resolves to the VPS.</li>
+        <li>Environment Variables tab: add every var from the table below.</li>
+        <li>Click <strong>Deploy</strong>. Coolify clones the repo, runs <code>docker compose build</code>
+          (using the Dockerfile) then <code>docker compose up -d</code>.</li>
+        <li>Verify network attachment over SSH:
+          <div class="file-card">
+            <div class="file-head"><span>verify</span><span class="tag">shell</span></div>
+            <pre><code>docker ps --filter "name=hub"
+docker network inspect db_network --format '{{json .Containers}}' | python3 -m json.tool</code></pre>
+          </div>
+          If the hub container is missing from that list, attach it manually as an immediate fix:
+          <code>docker network connect db_network &lt;actual-container-name&gt;</code>, then check Coolify's
+          raw compose preview to see why the declared network didn't survive, and re-verify after the next
+          redeploy.
+        </li>
+      </ol>
+      <div class="callout warn">
+        <strong class="label">DNS / Cloudflare caveat — verify, don't assume</strong>
+        The original docs mention Cloudflare orange-cloud proxy with SSL mode Full. Traefik's HTTP-01 challenge
+        generally works through Cloudflare's proxy as long as SSL mode stays "Full" (not "Flexible") and port 80
+        reaches Traefik. If cert issuance fails on first deploy, temporarily grey-cloud the DNS record for
+        <code>blonskyi.dev</code>, let Traefik issue the cert, then re-enable the proxy.
+      </div>
+
+      <h3 id="vps-envvars">C. Env vars to set in Coolify</h3>
+      <div class="overflow-x">
+      <table>
+        <thead><tr><th>Variable</th><th>Value</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td><code>DATABASE_URL</code></td><td><code>postgresql://hub:&lt;password&gt;@postgres:5432/hub</code></td><td>Step A</td></tr>
+          <tr><td><code>AUTH_SECRET</code></td><td>Output of <code>openssl rand -base64 33</code></td><td>Generate fresh for prod, never reuse the dev value</td></tr>
+          <tr><td><code>AUTH_TRUST_HOST</code></td><td><code>true</code></td><td>Required for self-hosted deploy behind Traefik</td></tr>
+          <tr><td><code>GOOGLE_CLIENT_ID</code></td><td>From Google Cloud Console OAuth client</td><td>Step E</td></tr>
+          <tr><td><code>GOOGLE_CLIENT_SECRET</code></td><td>From Google Cloud Console OAuth client</td><td>Step E</td></tr>
+          <tr><td><code>OWNER_EMAIL</code></td><td>Your Google account email</td><td>Grants <code>role: owner</code> on first login (<code>auth.ts</code> <code>signIn</code> callback)</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3 id="vps-seed">D. Apply migrations + run the seed once</h3>
+      <p>The entrypoint already runs <code>drizzle/migrate.mjs</code> automatically before <code>node
+        server.js</code> on every container start/redeploy — nothing manual needed there. The seed
+        (<code>sqlpanel</code> project row) is deliberately <em>not</em> automatic; run it once from your local
+        machine over an SSH tunnel, so you can use your existing <code>pnpm</code>/<code>tsx</code> tooling
+        without needing dev tooling inside the container:</p>
+      <div class="file-card">
+        <div class="file-head"><span>one-time seed</span><span class="tag">shell, from your machine</span></div>
+        <pre><code>ssh -N -L 5433:127.0.0.1:5432 mykola@&lt;vps-host&gt; &amp;
+DATABASE_URL='postgresql://hub:&lt;password&gt;@localhost:5433/hub' pnpm db:seed
+kill %1   # closes the tunnel</code></pre>
+      </div>
+
+      <h3 id="vps-oauth">E. Google OAuth production redirect URI</h3>
+      <p>In Google Cloud Console → your OAuth 2.0 Client → <strong>Authorized redirect URIs</strong>, add:</p>
+      <div class="file-card">
+        <div class="file-head"><span>redirect URI</span><span class="tag">Google Cloud Console</span></div>
+        <pre><code>https://blonskyi.dev/api/auth/callback/google</code></pre>
+      </div>
+      <p>Also add <code>https://blonskyi.dev</code> under <strong>Authorized JavaScript origins</strong> if not
+        already present.</p>
+    </section>
+
+    <!-- ============================= PHASE 2 ============================= -->
+    <section class="phase">
+      <h2 class="phase-title"><span class="num">2</span> Automated CI/CD</h2>
+
+      <h3 id="p2-e2e">Minimal e2e test setup — implemented, all 4 tests passing</h3>
+      <p><strong>Tooling:</strong> Playwright (<code>@playwright/test</code>) — its <code>webServer</code>
+        config natively handles "build, start, wait until ready" with no extra plumbing.</p>
+      <div class="file-card">
+        <div class="file-head"><span>playwright.config.ts</span><span class="tag">repo root · implemented</span></div>
+        <pre><code>import { defineConfig, devices } from '@playwright/test'
+
+export default defineConfig({
+  testDir: './e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI ? 'github' : 'list',
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+  },
+  webServer: {
+    command: 'pnpm build &amp;&amp; pnpm start',
+    url: 'http://localhost:3000/api/health',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+})</code></pre>
+      </div>
+      <div class="file-card">
+        <div class="file-head"><span>e2e/smoke.spec.ts</span><span class="tag">implemented</span></div>
+        <pre><code>import { test, expect } from '@playwright/test'
+
+test('health endpoint responds ok — confirms the app booted and migrations ran', async ({ request }) =&gt; {
+  const res = await request.get('/api/health')
+  expect(res.ok()).toBeTruthy()
+  expect(await res.json()).toEqual({ status: 'ok' })
+})
+
+test('unauthenticated request to root redirects to the login page', async ({ page }) =&gt; {
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/en\/login$/)
+})
+
+test('login page renders with the Google sign-in button', async ({ page }) =&gt; {
+  await page.goto('/en/login')
+  await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeVisible()
+})
+
+test('locale routing works for a non-default locale', async ({ page }) =&gt; {
+  await page.goto('/uk/login')
+  await expect(page).toHaveURL(/\/uk\/login$/)
+  await expect(page.getByText('Вхід')).toBeVisible()
+})</code></pre>
+      </div>
+      <div class="callout ok">
+        <strong class="label">Why no real DB is needed for these checks</strong>
+        <code>src/app/[locale]/page.tsx</code> redirects to login before touching Drizzle when there's no
+        session, and <code>middleware.ts</code>'s auth check short-circuits on a missing JWT cookie without an
+        adapter DB lookup. So CI only needs syntactically valid, not-necessarily-reachable env vars:
+      </div>
+      <div class="file-card">
+        <div class="file-head"><span>e2e job env</span><span class="tag">yaml</span></div>
+        <pre><code>DATABASE_URL: postgres://ci:ci@localhost:5432/ci_dummy
+AUTH_SECRET: ci-dummy-secret-not-for-prod-use
+AUTH_TRUST_HOST: "true"
+GOOGLE_CLIENT_ID: ci-dummy-client-id
+GOOGLE_CLIENT_SECRET: ci-dummy-client-secret
+OWNER_EMAIL: ci@example.com</code></pre>
+      </div>
+      <p><code>"test:e2e": "playwright test"</code> added to <code>package.json</code>.</p>
+
+      <h3 id="p2-workflow">.github/workflows/deploy.yml</h3>
+      <p>Strict linear gate via <code>needs:</code> — a failure anywhere stops everything downstream; nothing
+        gets pushed or deployed unless lint, typecheck, integration tests, and e2e tests all pass first.</p>
+      <div class="file-card">
+        <div class="file-head"><span>.github/workflows/deploy.yml</span><span class="tag">implemented</span></div>
+        <pre><code>name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc --noEmit
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test   # pretest/posttest already manage docker-compose.test.yml
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    env:
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci_dummy
+      AUTH_SECRET: ci-dummy-secret-not-for-prod-use
+      AUTH_TRUST_HOST: "true"
+      GOOGLE_CLIENT_ID: ci-dummy-client-id
+      GOOGLE_CLIENT_SECRET: ci-dummy-client-secret
+      OWNER_EMAIL: ci@example.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+
+  build-and-push:
+    runs-on: ubuntu-latest
+    needs: [e2e-tests]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/mykola-blonskyi/my-projects:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    steps:
+      - name: Trigger Coolify deploy webhook
+        run: |
+          curl --fail -X POST \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_WEBHOOK_TOKEN }}" \
+            "${{ secrets.COOLIFY_WEBHOOK_URL }}"</code></pre>
+      </div>
+      <div class="callout ok">
+        <strong class="label">Why the built-in GITHUB_TOKEN is enough</strong>
+        No separate PAT is needed — the image lives at <code>ghcr.io/mykola-blonskyi/my-projects</code>, the
+        same org/repo the workflow runs in, and <code>permissions: packages: write</code> on the job grants the
+        built-in token push rights to that package.
+      </div>
+
+      <h3 id="p2-webhook">Coolify webhook wiring — still your manual step</h3>
+      <p><strong>Generating it:</strong> open the <code>hub</code> application in Coolify (the one created
+        manually in Phase 1) → its <strong>Webhooks</strong> section exposes a deploy URL of the form
+        <code>https://&lt;your-coolify-domain&gt;/api/v1/deploy?uuid=&lt;application-uuid&gt;&amp;force=false</code>.
+        Authentication is a Bearer token generated separately under your Coolify user profile's
+        <strong>API Tokens</strong> page. Together these become two GitHub repo secrets:</p>
+      <ul>
+        <li><code>COOLIFY_WEBHOOK_URL</code> → the full URL above</li>
+        <li><code>COOLIFY_WEBHOOK_TOKEN</code> → the API token</li>
+      </ul>
+      <p>Add both under <strong>GitHub repo → Settings → Secrets and variables → Actions → New repository
+        secret</strong>.</p>
+
+      <div class="callout decision">
+        <strong class="label">Switching from build-from-git to pull-from-GHCR</strong>
+        Drop the <code>build:</code> key from the <code>hub</code> service in <code>docker-compose.yml</code>,
+        keeping only <code>image:</code> — Coolify's compose deployment is just <code>docker compose up -d</code>
+        under the hood, so a service with no <code>build:</code> key is simply pulled rather than built. No
+        change to Coolify's resource type is required beyond this one-line diff.
+      </div>
+      <div class="file-card">
+        <div class="file-head"><span>docker-compose.yml diff</span><span class="tag">Phase 1 → Phase 2, do this yourself once ready</span></div>
+        <pre><code> services:
+   hub:
+-    build:
+-      context: .
+-      dockerfile: Dockerfile
+     image: ghcr.io/mykola-blonskyi/my-projects:latest
+     container_name: hub
+     restart: unless-stopped</code></pre>
+      </div>
+      <div class="callout warn">
+        <strong class="label">Prerequisite before flipping the switch</strong>
+        <code>ghcr.io/mykola-blonskyi/my-projects</code> is very likely a <strong>private</strong> package.
+        Coolify's Docker daemon needs registry credentials to pull it — configure a GHCR read-only PAT
+        (<code>read:packages</code> scope) as a registry credential in Coolify (Server → Docker Registries, or
+        per-application registry settings), or <code>docker login ghcr.io</code> on the VPS host directly. Do
+        this once before flipping the compose file, or the first pull-based redeploy fails with an
+        image-pull auth error.
+      </div>
+
+      <h3 id="p2-handoff">Phase 1 → Phase 2 handoff</h3>
+      <p><strong>Before Phase 2 exists:</strong> pushing to <code>main</code> does nothing automatically —
+        deploys happen only when you manually click "Redeploy" in Coolify (re-clones and rebuilds from git).</p>
+      <p><strong>After Phase 2 is live:</strong> every push to <code>main</code> automatically runs the full
+        lint → typecheck → integration → e2e gate; only if all four pass does it build the image, push to GHCR,
+        and call the Coolify webhook, which pulls that new image and recreates the container — no manual
+        Coolify UI interaction needed for routine deploys. The UI remains available as a fallback: with only a
+        <code>:latest</code> tag configured, the fastest rollback for a bad deploy that somehow got through is
+        <code>git revert</code> the offending commit on <code>main</code> and let the pipeline redeploy the
+        reverted state (adding SHA-tagged images to the workflow would enable a faster image-level rollback,
+        worth doing before relying on it).</p>
+    </section>
+
+    <section class="phase">
+      <h2 class="phase-title" id="docs-fixes"><span class="num">✓</span> Docs corrections — already applied</h2>
+      <ul>
+        <li><code>docs/architecture.md</code> — <code>shared</code> network name → <code>db_network</code>, and
+          "Coolify-managed Caddy" → "Coolify-managed Traefik" (3 places, including the compose example, which
+          also gained the <code>AUTH_TRUST_HOST</code> env var).</li>
+        <li><code>docs/decisions.md</code> ADR-005 — same Caddy → Traefik correction in the Decision and
+          Consequences sections.</li>
+        <li><code>boilerplates/subdomain-app.md</code> — "attach it to the shared Docker network" → "attach it
+          to the <code>db_network</code> Docker network".</li>
+      </ul>
+    </section>
+
+    <section class="phase">
+      <h2 class="phase-title" id="implemented"><span class="num">✓</span> What's already implemented in this repo</h2>
+      <ul>
+        <li><strong>New files:</strong> <code>Dockerfile</code>, <code>docker-entrypoint.sh</code>,
+          <code>.dockerignore</code>, <code>docker-compose.yml</code>, <code>drizzle/migrate.mjs</code>,
+          <code>src/app/api/health/route.ts</code>, <code>playwright.config.ts</code>,
+          <code>e2e/smoke.spec.ts</code>, <code>.github/workflows/deploy.yml</code></li>
+        <li><strong>Edited:</strong> <code>next.config.ts</code> (standalone output),
+          <code>src/middleware.ts</code> (health route excluded from auth), <code>.env.example</code>
+          (<code>AUTH_TRUST_HOST</code>), <code>package.json</code> (<code>@playwright/test</code> devDependency
+          + <code>test:e2e</code> script), <code>pnpm-workspace.yaml</code> (added the missing
+          <code>packages:</code> field — see the callout above), plus the three docs files listed above</li>
+        <li><strong>Verified locally:</strong> <code>tsc --noEmit</code> clean, <code>pnpm build</code> produces
+          <code>.next/standalone/server.js</code>, full <code>docker compose build &amp;&amp; up</code> against
+          a throwaway Postgres succeeds, migrations run automatically on boot, health check returns 200,
+          unauthenticated root redirects to login, and all 4 Playwright e2e tests pass against the real
+          container.</li>
+        <li><strong>Still manual (yours to do):</strong> everything in the VPS Runbook section above — creating
+          the production database/role, setting up the Coolify application, entering secrets, registering the
+          Google OAuth redirect URI, generating the Coolify webhook URL/token and adding them as GitHub repo
+          secrets, and configuring GHCR registry credentials in Coolify before switching the compose file to
+          pull-based deploys.</li>
+      </ul>
+    </section>
+
+    <footer>
+      <strong>Critical files referenced in this runbook</strong>
+      <ul>
+        <li>Dockerfile</li>
+        <li>docker-compose.yml</li>
+        <li>next.config.ts</li>
+        <li>src/middleware.ts</li>
+        <li>src/features/auth/lib/auth.ts</li>
+        <li>package.json</li>
+        <li>pnpm-workspace.yaml</li>
+        <li>.env.example</li>
+        <li>.github/workflows/deploy.yml</li>
+        <li>docs/architecture.md</li>
+      </ul>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

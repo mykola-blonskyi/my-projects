@@ -11,6 +11,7 @@ export default auth((req) => {
   // Pass through Next.js internals and API auth routes
   if (
     pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/health') ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/_vercel') ||
     /\.[^/]+$/.test(pathname)

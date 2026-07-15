@@ -145,5 +145,5 @@ Access rules:
 - [ ] Copy `.env.example` and fill in `API_URL`, `AUTH_SECRET`, `COOKIE_DOMAIN`, `PROJECT_SLUG`
 - [ ] Add `src/middleware.ts` from the pattern above
 - [ ] Verify `AUTH_SECRET` matches the hub's secret exactly
-- [ ] Register the subdomain in Coolify and attach it to the shared Docker network
+- [ ] Register the subdomain in Coolify and attach it to the `db_network` Docker network
 - [ ] Add the subdomain to the `COOKIE_DOMAIN` allowlist in the hub's Auth.js config if needed

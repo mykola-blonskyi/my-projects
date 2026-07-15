@@ -107,7 +107,7 @@ Currently deploying manually via SSH.
 
 ### Decision
 Coolify installed on VPS. GitHub Actions builds and pushes Docker image to GHCR,
-then triggers Coolify deploy webhook. Coolify manages Caddy (reverse proxy) and SSL (Let's Encrypt).
+then triggers Coolify deploy webhook. Coolify manages Traefik (reverse proxy) and SSL (Let's Encrypt).
 
 ### Alternatives Considered
 - GitHub Actions + SSH deploy script — simpler but requires manual SSL, subdomain config, no dashboard
@@ -116,7 +116,7 @@ then triggers Coolify deploy webhook. Coolify manages Caddy (reverse proxy) and 
 
 ### Consequences
 - Existing `sqlpanel.blonskyi.dev` Docker setup must be migrated into Coolify (one-time)
-- Cloudflare SSL mode must be set to Full (not Flexible) since Caddy issues internal certs
+- Cloudflare SSL mode must be set to Full (not Flexible) since Traefik issues internal certs
 - All future subdomains managed from Coolify dashboard
 
 ---

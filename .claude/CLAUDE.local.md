@@ -52,6 +52,15 @@ This repo also doubles as the **project template scaffold** — `docs/`, `knowle
 
 ---
 
+## Workflow
+
+- Before pushing a branch or opening a PR to `main`, check the GitHub issue(s) the branch closes:
+  verify each acceptance criteria checkbox against the actual code/tests, check off what's genuinely
+  done, and update the issue status (comment/close) if it's stale. Don't rely on the checkboxes as
+  written before the change — verify against current code each time.
+
+---
+
 ## Known Limitations
 
 - No session revocation today — JWT lives until 24h expiry (mitigated by short TTL)

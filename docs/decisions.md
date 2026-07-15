@@ -167,3 +167,39 @@ when user changes preference.
 - After login, server reads user's saved locale/theme and redirects to correct URL
 - Theme and locale changes trigger a server action to update DB
 - Slight DB write on every preference change (acceptable at this scale)
+
+---
+
+## ADR-008: Vitest integration tests against a real test PostgreSQL, auth boundary mocked
+
+Date: 2026-07-15
+
+Status: Accepted
+
+### Context
+Need integration coverage for `/api/auth/validate`, the preference server actions, and the
+project list data layer. Google OAuth itself can't be driven in a test run, but the DB-backed
+authorization logic (owner bypass, `project_access` lookups) is exactly what needs verifying —
+mocking the database would defeat the purpose.
+
+### Decision
+Vitest runs against a real PostgreSQL instance started via `docker-compose.test.yml`
+(`pnpm test` handles `up --wait` / `down` via `pretest`/`posttest`). Only the `auth()` wrapper
+from `@/features/auth/lib/auth` is mocked per test to stand in for a verified session — everything
+downstream of that boundary (`validateProjectAccess`, Drizzle queries, server actions) hits the
+real test database. Each test truncates the relevant tables in `afterEach`. Test files run with
+`fileParallelism: false` since they share one Postgres instance and interleaved truncates/inserts
+across files caused cross-test data races.
+
+### Alternatives Considered
+- Mocking the DB layer — rejected, defeats the purpose of an integration suite
+- Driving real Google OAuth in CI — impractical/flaky, no test IdP available
+- Per-file/per-worker test databases — more isolation but adds real setup complexity; not
+  justified at this project's scale, so sequential execution was chosen instead
+
+### Consequences
+- Tests require Docker locally and in CI to run `pnpm test`
+- Adding more integration test files keeps the suite correct only if they continue to clean up
+  their own DB state in `afterEach`, since execution is sequential but state is shared
+- `auth()` mocking means the tests don't cover NextAuth's own JWT verification — that's Auth.js's
+  responsibility, not this application's

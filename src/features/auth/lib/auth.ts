@@ -10,6 +10,25 @@ import {
   verificationTokens,
 } from '../../../../drizzle/schema';
 
+const originalFetch = global.fetch;
+global.fetch = async (input, init) => {
+  const url = typeof input === 'string' ? input : input.toString();
+  if (url.includes('googleapis.com') || url.includes('accounts.google.com')) {
+    console.log('[DEBUG_FETCH_REQUEST]', {
+      url,
+      method: init?.method,
+      body: init?.body?.toString(),
+      headers: init?.headers,
+    });
+    const res = await originalFetch(input, init);
+    const clone = res.clone();
+    const text = await clone.text();
+    console.log('[DEBUG_FETCH_RESPONSE]', { status: res.status, body: text });
+    return res;
+  }
+  return originalFetch(input, init);
+};
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   debug: true,
@@ -23,7 +42,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      checks: ['state'],
     }),
   ],
   session: {

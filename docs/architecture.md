@@ -113,12 +113,12 @@ services:
     networks:
       - coolify
     environment:
-      - DATABASE_URL
-      - AUTH_SECRET
-      - AUTH_TRUST_HOST
-      - GOOGLE_CLIENT_ID
-      - GOOGLE_CLIENT_SECRET
-      - OWNER_EMAIL
+      - DATABASE_URL=${DATABASE_URL}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - OWNER_EMAIL=${OWNER_EMAIL}
       - API_URL=https://blonskyi.dev
 
 networks:

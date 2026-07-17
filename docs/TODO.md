@@ -17,8 +17,13 @@
 
 ## In Progress
 
-Hub application — 12 tickets tracked in GitHub Issues:
+Hub application — all 12 implementation tickets closed:
 https://github.com/mykola-blonskyi/my-projects/issues/1
+
+Deployed to Coolify, auto-deploy pipeline working end-to-end, Google OAuth login fixed. Blocked on
+a Cloudflare "Error 1000: DNS points to prohibited IP" for `blonskyi.dev` despite clean DNS records
+(likely edge cache/propagation) — pending retry. Once resolved and login verified live, issue #1
+(spec epic) can close.
 
 ---
 

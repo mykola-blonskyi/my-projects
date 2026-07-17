@@ -245,3 +245,45 @@ admin role or the shared `app` database.
   rather than reintroducing a bespoke network
 - If a second Postgres instance is ever added to this VPS, its alias must not collide with
   `postgres` on the `coolify` network — pick a distinct Coolify resource name
+
+---
+
+## ADR-010: `AUTH_URL` hardcoded — `trustHost` alone doesn't cover the token exchange
+
+Date: 2026-07-17
+
+Status: Accepted
+
+### Context
+After first deploying to Coolify, Google sign-in failed at the callback step with a generic
+`invalid_request` / "doesn't comply with Google's OAuth 2.0 policy" error from Google's token
+endpoint. `AUTH_TRUST_HOST=true` and `trustHost: true` were both set, and the *initial*
+authorization redirect to Google correctly used `https://blonskyi.dev`. Client ID/secret, scopes,
+redirect URI registration, and PKCE were all verified correct by direct testing (manual token
+requests against Google's real endpoint, and temporarily logging the raw outbound request/response
+— see git history for `src/features/auth/lib/auth.ts` around this date, since removed).
+
+The raw logged request revealed the actual cause: the token-exchange step (separate code path from
+the authorization redirect) reconstructed its own `redirect_uri` as `https://0.0.0.0:3000/...` —
+the container's raw `HOSTNAME:PORT` — instead of the Traefik-forwarded public host. Since this
+didn't match the `redirect_uri` used in the authorization request, Google rejected the token
+exchange. `trustHost` only fixed host detection for the outbound sign-in redirect, not this second
+code path — a real inconsistency in `next-auth@5.0.0-beta.31`.
+
+### Decision
+Hardcode `AUTH_URL=https://blonskyi.dev/api/auth` in `docker-compose.yml` (same pattern as
+`API_URL` — a fixed public constant, not a per-deploy secret). This gives Auth.js an explicit
+canonical URL for every internal construction site, removing any reliance on header-based
+detection being consistently applied across the library's code paths.
+
+### Alternatives Considered
+- Relying solely on `AUTH_TRUST_HOST` / `trustHost: true` — insufficient, per the above
+- Disabling PKCE (`checks: ['state']`) — tested to rule out PKCE as the cause; it wasn't, and this
+  would have been a real security regression (loses protection against auth code interception), so
+  it was reverted immediately after the test
+
+### Consequences
+- If `next-auth` is upgraded past beta and this is confirmed fixed upstream, `AUTH_URL` can likely
+  be removed — but there's no cost to leaving it, so no urgency
+- Any future subdomain app hitting the same "callback redirects to an internal host" symptom should
+  check this first before re-diagnosing from scratch

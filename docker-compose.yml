@@ -17,8 +17,6 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - OWNER_EMAIL=${OWNER_EMAIL}
       - API_URL=https://blonskyi.dev
-    ports:
-      - "3000:3000"
     networks:
       - coolify
 

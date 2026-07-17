@@ -2,7 +2,6 @@
 
 ## High Priority
 
-- [ ] Migrate `sqlpanel.blonskyi.dev` existing Docker setup into Coolify
 - [ ] Build first subdomain app using the boilerplate template (`todo.blonskyi.dev`)
 - [ ] Admin UI — simple page (owner-only) to manage project access without touching DB directly
 

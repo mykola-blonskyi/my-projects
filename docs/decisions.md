@@ -115,7 +115,9 @@ then triggers Coolify deploy webhook. Coolify manages Traefik (reverse proxy) an
 - Dokku — Heroku-like, more opinionated, git-push model
 
 ### Consequences
-- Existing `sqlpanel.blonskyi.dev` Docker setup must be migrated into Coolify (one-time)
+- Existing `sqlpanel.blonskyi.dev` (Postgres + pgAdmin) Docker setup must be migrated into Coolify
+  (one-time) — done 2026-07-17: replaced with a Coolify project running Postgres + CloudBeaver at
+  `db.blonskyi.dev`. See ADR-009 for the resulting network change.
 - Cloudflare SSL mode must be set to Full (not Flexible) since Traefik issues internal certs
 - All future subdomains managed from Coolify dashboard
 
@@ -203,3 +205,43 @@ across files caused cross-test data races.
   their own DB state in `afterEach`, since execution is sequential but state is shared
 - `auth()` mocking means the tests don't cover NextAuth's own JWT verification — that's Auth.js's
   responsibility, not this application's
+
+---
+
+## ADR-009: Hub connects to PostgreSQL over Coolify's built-in `coolify` network
+
+Date: 2026-07-17
+
+Status: Accepted
+
+### Context
+ADR-005 and the original architecture docs assumed a hand-created `db_network` shared by all
+services. That network was based on the pre-Coolify hand-run stack (`postgres` + `pgadmin` at
+`/home/mykola/infra/db` on the VPS). That stack has since been decommissioned: Postgres and
+CloudBeaver (replacing pgAdmin, served at `db.blonskyi.dev`) now run as Coolify-managed resources
+in their own project, on a Coolify-generated project network plus Coolify's instance-wide
+`coolify` network. The `db_network` referenced in `docker-compose.yml` and the docs no longer
+exists on the VPS.
+
+### Decision
+The hub service joins the `coolify` network (external, already present — every Coolify-managed
+container is attached to it) instead of a manually created `db_network`. Postgres already has the
+Docker DNS alias `postgres` on that network, so `DATABASE_URL` uses `postgres` as the host.
+A dedicated `hub_app` role and `hub` database were created on the existing Postgres instance
+(least-privilege, isolated from other tenants of that database server) rather than reusing the
+admin role or the shared `app` database.
+
+### Alternatives Considered
+- Manually `docker network create db_network` and `docker network connect` it to the Postgres
+  container — matches the original plan, but Coolify doesn't track that network, so if Coolify
+  ever recreates the Postgres container (upgrade, resource re-provision), the manual attachment is
+  silently lost until reconnected by hand
+- Reusing the admin `mykola` role / `app` database for the hub — rejected, no isolation between
+  the hub app and other future consumers of the same Postgres instance
+
+### Consequences
+- `docker-compose.yml` and `docs/architecture.md` reference `coolify` instead of `db_network`
+- Any future service that needs direct Postgres access should also join the `coolify` network
+  rather than reintroducing a bespoke network
+- If a second Postgres instance is ever added to this VPS, its alias must not collide with
+  `postgres` on the `coolify` network — pick a distinct Coolify resource name

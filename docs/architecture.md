@@ -99,7 +99,7 @@ User → todo.blonskyi.dev → subdomain middleware
 ## Deployment
 
 - **VPS**: Single server running Docker
-- **Network**: Shared Docker network (`db_network`) — all services can reach PostgreSQL
+- **Network**: Coolify's built-in shared network (`coolify`) — every Coolify-managed service joins it automatically, so the hub reaches PostgreSQL over Docker DNS at hostname `postgres`
 - **Reverse proxy**: Coolify-managed Traefik — routes subdomains to containers, handles internal TLS
 - **CDN**: Cloudflare in front — orange-cloud proxy ON, SSL mode Full
 - **Registry**: GitHub Container Registry (GHCR) — `ghcr.io/mykola-blonskyi/my-projects`
@@ -111,7 +111,7 @@ services:
   hub:
     image: ghcr.io/mykola-blonskyi/my-projects:latest
     networks:
-      - db_network
+      - coolify
     environment:
       - DATABASE_URL
       - AUTH_SECRET
@@ -122,7 +122,7 @@ services:
       - API_URL=https://blonskyi.dev
 
 networks:
-  db_network:
+  coolify:
     external: true
 ```
 

@@ -13,8 +13,6 @@
 
 ## Planned
 
-- [ ] Migrate `sqlpanel.blonskyi.dev` existing Docker setup into Coolify
-
 ---
 
 ## In Progress
@@ -38,3 +36,5 @@ https://github.com/mykola-blonskyi/my-projects/issues/1
 - [x] File structure design (feature-based)
 - [x] Spec written (2026-07-13) — [issue #1](https://github.com/mykola-blonskyi/my-projects/issues/1)
 - [x] 12 implementation tickets created (2026-07-13)
+- [x] Migrate `sqlpanel.blonskyi.dev` existing Docker setup into Coolify — replaced with
+      `db.blonskyi.dev` (Postgres + CloudBeaver) (2026-07-17)

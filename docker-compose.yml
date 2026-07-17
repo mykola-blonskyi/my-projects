@@ -1,9 +1,7 @@
 services:
   hub:
-    build:
-      context: .
-      dockerfile: Dockerfile
     image: ghcr.io/mykola-blonskyi/my-projects:latest
+    pull_policy: always
     container_name: hub
     restart: unless-stopped
     environment:

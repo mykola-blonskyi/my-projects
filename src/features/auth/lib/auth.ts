@@ -12,6 +12,7 @@ import {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
+  debug: true,
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,

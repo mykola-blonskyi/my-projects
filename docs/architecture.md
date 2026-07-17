@@ -113,7 +113,7 @@ services:
     networks:
       - coolify
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
       - AUTH_SECRET=${AUTH_SECRET}
       - AUTH_TRUST_HOST=${AUTH_TRUST_HOST:-true}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}

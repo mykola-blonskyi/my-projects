@@ -287,3 +287,73 @@ detection being consistently applied across the library's code paths.
   be removed — but there's no cost to leaving it, so no urgency
 - Any future subdomain app hitting the same "callback redirects to an internal host" symptom should
   check this first before re-diagnosing from scratch
+- Turned out to have a real side effect on every non-auth request too — see ADR-011
+
+---
+
+## ADR-011: Read session in middleware via `getToken()`, not the `auth()` wrapper
+
+Date: 2026-07-19
+
+Status: Accepted
+
+### Context
+After ADR-010, production started returning Cloudflare "Error 1000: DNS points to prohibited IP"
+on every page load, first noticed blocking issue #1's closure. Extensive live debugging (DNS
+records, Cloudflare dashboard config, browser/device/network isolation — see `reports/` history
+for this date) ruled out DNS, Load Balancing, Origin Rules, Workers routes, and client-side
+caching: the error was live and reproducible from a bare `curl` on a completely fresh connection.
+
+Reproduced reliably offline by building the actual production Docker image locally and driving it
+directly (bypassing Traefik/Cloudflare entirely). Root cause, confirmed by reading
+`next-auth@5.0.0-beta.31` source: `reqWithEnvURL()` (`node_modules/next-auth/lib/env.js`)
+unconditionally rewrites the request's origin to `AUTH_URL`'s origin, and this runs inside
+`handleAuth()` — the function backing *every* call style of the `auth()` export, including
+`export default auth((req) => {...})` as used in `middleware.ts`. So every request that passed
+through the middleware saw an `AUTH_URL`-poisoned `request.url`, regardless of whether it was an
+actual auth route. `next-intl`'s `createIntlMiddleware` internally performs a `NextResponse.rewrite()`
+on every request (to pass the resolved locale to Server Components); in any production-mode Next.js
+server (confirmed for both `next start` and `output: 'standalone'`), resolving a rewrite whose
+target is an absolute URL means Next.js makes a real outbound HTTPS request to that URL instead of
+resolving it internally. With the origin poisoned to `https://blonskyi.dev`, that request round-tripped
+through Cloudflare from the origin's own IP and was blocked as a loop.
+
+`next-intl` was not the defect — it was a correct, ordinary `rewrite()` call that became
+collateral damage from `request.url` no longer reflecting the real request.
+
+The only way to check auth in middleware without triggering `reqWithEnvURL` turned out to be
+`getToken()` from `next-auth/jwt` (re-exported from `@auth/core/jwt`): it reads the session cookie
+directly from `req.headers` and never touches `req.url`. The alternative — calling `auth()` with no
+arguments, as done in Server Components — was considered and rejected: that code path depends on
+`headers()` from `next/headers`, which reads an AsyncLocalStorage-backed request store that Next.js
+only establishes during App Router rendering/route handlers, not during `middleware.ts` execution.
+
+### Decision
+Rewrite `middleware.ts` as a plain Next.js middleware function (no `auth()` wrapper). Use
+`getToken({ req, secret: process.env.AUTH_SECRET, cookieName: 'authjs.session-token', secureCookie })`
+in place of `req.auth` for the authenticated/unauthenticated check — matching the custom session
+cookie name configured in `auth.ts`. `AUTH_URL`/`AUTH_TRUST_HOST` are left untouched: the actual
+`/api/auth/[...nextauth]` route handlers still need them for the OAuth token exchange (ADR-010),
+and that code path is entirely separate from middleware.
+
+### Alternatives Considered
+- Removing `AUTH_URL` — fixes Error 1000, but directly reintroduces ADR-010's bug (confirmed by
+  reproducing the token-exchange call locally with `AUTH_URL` unset: `redirect_uri` fell back to
+  raw `HOSTNAME:PORT` again, and even the *initial* authorization redirect was affected this time,
+  not just the token exchange)
+- Calling `auth()` with zero arguments inside middleware — mechanically incompatible with the
+  middleware execution context (see Context); not pursued once traced to the `next/headers`
+  dependency
+- Removing or restructuring `next-intl`'s middleware-based locale routing — would have worked
+  around the symptom, but next-intl was never the defect; not warranted for what was fundamentally
+  an Auth.js request-mutation bug
+
+### Consequences
+- Any future middleware logic needing session data beyond a boolean check must decode it from the
+  `getToken()` payload directly (it returns the raw JWT claims, not the enriched `Session` object
+  from the `session()` callback) — currently only presence/absence is checked, so this hasn't come
+  up
+- If `next-auth` is upgraded past beta and ADR-010's `AUTH_URL` requirement is later removed, this
+  `getToken()`-based middleware can stay as-is; it doesn't depend on `AUTH_URL` either way
+- `docs/TODO.md`'s "likely edge cache/propagation" note for the Error 1000 blocker was wrong; this
+  entry is the actual root cause going forward

@@ -21,9 +21,11 @@ Hub application — all 12 implementation tickets closed:
 https://github.com/mykola-blonskyi/my-projects/issues/1
 
 Deployed to Coolify, auto-deploy pipeline working end-to-end, Google OAuth login fixed. Blocked on
-a Cloudflare "Error 1000: DNS points to prohibited IP" for `blonskyi.dev` despite clean DNS records
-(likely edge cache/propagation) — pending retry. Once resolved and login verified live, issue #1
-(spec epic) can close.
+a Cloudflare "Error 1000: DNS points to prohibited IP" for `blonskyi.dev` on every page load — was
+not DNS/edge propagation as first suspected. Root cause and fix: see ADR-011 in `docs/decisions.md`.
+Fix is on branch `fix/error-1000-middleware-auth-url`, verified locally, pending PR review/merge
+and a live deploy check. Once merged, deployed, and login verified live, issue #1 (spec epic) can
+close.
 
 ---
 

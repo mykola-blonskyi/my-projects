@@ -16,7 +16,8 @@
     "pretest": "docker compose -f docker-compose.test.yml up -d --wait",
     "test": "vitest run",
     "posttest": "docker compose -f docker-compose.test.yml down",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "prepare": "husky"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",
@@ -45,6 +46,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.1.0",
     "postcss": "^8.4.47",
     "prettier": "^3.9.5",
     "tailwindcss": "^3.4.17",

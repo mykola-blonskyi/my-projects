@@ -15,5 +15,5 @@ export async function setLocale(locale: string) {
     await db.update(users).set({ locale }).where(eq(users.id, session.user.id))
   }
 
-  redirect(`/${locale}/`)
+  redirect(`/${locale}/projects`)
 }

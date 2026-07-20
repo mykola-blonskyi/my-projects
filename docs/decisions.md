@@ -357,3 +357,59 @@ and that code path is entirely separate from middleware.
   `getToken()`-based middleware can stay as-is; it doesn't depend on `AUTH_URL` either way
 - `docs/TODO.md`'s "likely edge cache/propagation" note for the Error 1000 blocker was wrong; this
   entry is the actual root cause going forward
+
+---
+
+## ADR-012: Build absolute redirect URLs from `API_URL`, not the request/framework's own host detection
+
+Date: 2026-07-20
+
+Status: Accepted
+
+### Context
+After ADR-011 shipped, login still appeared to silently fail: the user reported staying on the
+login form after a successful Google sign-in instead of landing on the projects page. Decoding the
+real session cookie with the real `AUTH_SECRET` confirmed the session itself was valid and
+correctly issued (right claims, not expired) — ruling out `getToken()`/ADR-011 entirely. Hitting
+the real production middleware directly with that same cookie (via `curl`) also worked correctly:
+a clean `200` on the target locale page.
+
+The actual break was in `src/app/api/auth/post-login/route.ts`: hitting it directly with the valid
+cookie returned `location: https://0.0.0.0:3000/uk/` — a private, unroutable address the browser
+can't navigate to, which is exactly why the page appeared to just sit still. The route built its
+redirect with `new URL(path, req.url)`, where `req` is the plain Web `Request` passed to an App
+Router Route Handler — this is a *different* object than `NextRequest`/`nextUrl` (which middleware
+uses and which does correctly resolve to the public host), and its `.url` resolved to the
+container's raw `HOSTNAME:PORT` behind Traefik/Coolify instead.
+
+The same failure class turned up in `src/features/auth/actions/logout.ts`: the Server Action calls
+`signOut({ redirectTo: '/en/login' })` with a relative path, and Next.js's own Server Actions
+runtime (`action-handler.js`) attempts to internally re-fetch same-origin redirect targets to
+inline the resulting page (an optimization, unrelated to Auth.js) — constructing that internal
+fetch URL from its own host detection, which also resolved to the container's raw address.
+Confirmed live in production logs as a `TypeError: fetch failed` / `ERR_SSL_WRONG_VERSION_NUMBER`
+(the internal fetch tried HTTPS against the standalone server's plain-HTTP-only port); the
+malformed URL then leaked to the client via the `x-action-redirect` header.
+
+### Decision
+Wherever this app needs to build an absolute redirect URL server-side (Route Handlers, Server
+Actions), use `process.env.API_URL` (`https://blonskyi.dev`, already set in `docker-compose.yml`
+for exactly this purpose but previously unused in code) as the base instead of `req.url` or a
+relative path handed to a framework helper. Passing an already-absolute URL to `signOut({
+redirectTo })` also has the side effect of making Next.js treat the redirect as cross-origin,
+skipping the same internal self-fetch optimization that was failing.
+
+### Alternatives Considered
+- Trusting `X-Forwarded-Host`/`X-Forwarded-Proto` headers directly in each call site — would work,
+  but `API_URL` already exists in the environment for this exact purpose; reading it directly is
+  simpler and avoids re-deriving the same value from headers in multiple places
+- Fixing this generically at the framework level (e.g. `__NEXT_PRIVATE_ORIGIN`) — a community
+  report for a related Next.js standalone bug (see ADR-011) noted this env var did not fix their
+  case either; not pursued further given the targeted fix is small and already verified
+
+### Consequences
+- Any new Route Handler or Server Action added later that needs to build an absolute URL should
+  use `API_URL`, not `req.url`/a relative path passed to a redirect helper — this is now the
+  established pattern for this app running self-hosted behind Traefik/Coolify
+- If `next-auth`/Next.js versions are upgraded and this host-detection inconsistency is fixed
+  upstream, these call sites can stay as-is; `API_URL` remains a correct base either way

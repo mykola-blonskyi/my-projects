@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test'
 
-test('health endpoint responds ok — confirms the app booted and migrations ran', async ({ request }) => {
+test('health endpoint responds ok — confirms the app booted and migrations ran', async ({
+  request,
+}) => {
   const res = await request.get('/api/health')
   expect(res.ok()).toBeTruthy()
   expect(await res.json()).toEqual({ status: 'ok' })

@@ -40,9 +40,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
           themes={['light', 'dark', 'theme-rose']}
           disableTransitionOnChange
         >
-          <NextIntlClientProvider messages={messages}>
-            {children}
-          </NextIntlClientProvider>
+          <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
         </ThemeProvider>
       </body>
     </html>

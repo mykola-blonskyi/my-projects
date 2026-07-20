@@ -10,9 +10,7 @@ export function ProjectGrid({ projects }: ProjectGridProps) {
   const t = useTranslations('ProjectsPage')
 
   if (projects.length === 0) {
-    return (
-      <p className="text-center text-muted-foreground py-16">{t('emptyState')}</p>
-    )
+    return <p className="text-center text-muted-foreground py-16">{t('emptyState')}</p>
   }
 
   return (

@@ -1,0 +1,18 @@
+node_modules
+.next
+.pnpm-store
+pnpm-lock.yaml
+drizzle/migrations
+coverage
+
+# Prose/reference material, not application code - not managed by Prettier
+docs
+knowledge
+graph
+plans
+reports
+boilerplates
+README.md
+
+# CI config - YAML indentation/quoting is left as authored
+.github

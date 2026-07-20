@@ -1,6 +1,6 @@
-import { db } from '@/shared/lib/db';
-import { projects, projectAccess } from '../../../../drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@/shared/lib/db'
+import { projects, projectAccess } from '../../../../drizzle/schema'
+import { eq, and } from 'drizzle-orm'
 
 export async function validateProjectAccess(
   userId: string,
@@ -9,31 +9,22 @@ export async function validateProjectAccess(
 ): Promise<{ allowed: boolean }> {
   // Owners have access to all projects
   if (role === 'owner') {
-    return { allowed: true };
+    return { allowed: true }
   }
 
   // Look up the project by slug
-  const project = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.slug, projectSlug))
-    .limit(1);
+  const project = await db.select().from(projects).where(eq(projects.slug, projectSlug)).limit(1)
 
   if (!project.length) {
-    return { allowed: false };
+    return { allowed: false }
   }
 
   // Check whether the user has an explicit access grant
   const access = await db
     .select()
     .from(projectAccess)
-    .where(
-      and(
-        eq(projectAccess.userId, userId),
-        eq(projectAccess.projectId, project[0].id),
-      ),
-    )
-    .limit(1);
+    .where(and(eq(projectAccess.userId, userId), eq(projectAccess.projectId, project[0].id)))
+    .limit(1)
 
-  return { allowed: access.length > 0 };
+  return { allowed: access.length > 0 }
 }

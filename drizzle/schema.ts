@@ -1,11 +1,4 @@
-import {
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  integer,
-  primaryKey,
-} from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, integer, primaryKey } from 'drizzle-orm/pg-core'
 
 // ─── Users ───────────────────────────────────────────────────────────────────
 
@@ -19,7 +12,7 @@ export const users = pgTable('users', {
   locale: text('locale').default('en').notNull(),
   theme: text('theme').default('light').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+})
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 
@@ -32,7 +25,7 @@ export const projects = pgTable('projects', {
   icon: text('icon'),
   order: integer('order').default(0).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+})
 
 // ─── Project Access ───────────────────────────────────────────────────────────
 
@@ -48,7 +41,7 @@ export const projectAccess = pgTable(
     grantedAt: timestamp('granted_at').defaultNow().notNull(),
   },
   (table) => [primaryKey({ columns: [table.userId, table.projectId] })],
-);
+)
 
 // ─── Auth.js — Accounts ───────────────────────────────────────────────────────
 // Column property names use snake_case to match @auth/drizzle-adapter type expectations.
@@ -67,7 +60,7 @@ export const accounts = pgTable('accounts', {
   scope: text('scope'),
   id_token: text('id_token'),
   session_state: text('session_state'),
-});
+})
 
 // ─── Auth.js — Sessions ───────────────────────────────────────────────────────
 
@@ -77,7 +70,7 @@ export const sessions = pgTable('sessions', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   expires: timestamp('expires', { mode: 'date' }).notNull(),
-});
+})
 
 // ─── Auth.js — Verification Tokens ───────────────────────────────────────────
 
@@ -89,4 +82,4 @@ export const verificationTokens = pgTable(
     expires: timestamp('expires', { mode: 'date' }).notNull(),
   },
   (table) => [primaryKey({ columns: [table.identifier, table.token] })],
-);
+)

@@ -14,8 +14,8 @@ export function ThemeToggle() {
   function cycleTheme() {
     const currentIndex = THEMES.indexOf(theme as (typeof THEMES)[number])
     const nextTheme = THEMES[(currentIndex + 1) % THEMES.length]
-    setTheme(nextTheme)        // immediate client-side update
-    persistTheme(nextTheme)    // persist to DB in background
+    setTheme(nextTheme) // immediate client-side update
+    persistTheme(nextTheme) // persist to DB in background
   }
 
   function getLabel() {
@@ -25,12 +25,7 @@ export function ThemeToggle() {
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={cycleTheme}
-      aria-label={t('toggleTheme')}
-    >
+    <Button variant="outline" size="sm" onClick={cycleTheme} aria-label={t('toggleTheme')}>
       {getLabel()}
     </Button>
   )

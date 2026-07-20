@@ -3,10 +3,12 @@ name: Deploy
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 concurrency:
-  group: deploy-main
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:
@@ -78,6 +80,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     needs: [e2e-tests]
+    if: github.event_name == 'push'
     permissions:
       contents: read
       packages: write
@@ -100,6 +103,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [build-and-push]
+    if: github.event_name == 'push'
     steps:
       - name: Trigger Coolify deploy webhook
         run: |

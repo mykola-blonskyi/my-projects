@@ -1,18 +1,18 @@
-import { redirect } from 'next/navigation'
-import { getTranslations } from 'next-intl/server'
-import { auth } from '@/features/auth/lib/auth'
-import { Header } from '@/shared/ui/header'
-import { ProjectGrid } from '@/features/projects/components/ProjectGrid'
-import { getProjectsForUser } from '@/features/projects/lib/queries'
+import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
+import { auth } from '@/features/auth/lib/auth';
+import { Header } from '@/shared/ui/header';
+import { ProjectGrid } from '@/features/projects/components/ProjectGrid';
+import { getProjectsForUser } from '@/features/projects/lib/queries';
 
 export default async function HomePage() {
-  const session = await auth()
-  if (!session?.user) redirect('/en/login')
+  const session = await auth();
+  if (!session?.user) redirect('/en/login');
 
   const [projects, t] = await Promise.all([
     getProjectsForUser(session.user.id, session.user.role),
     getTranslations('ProjectsPage'),
-  ])
+  ]);
 
   return (
     <>
@@ -25,5 +25,5 @@ export default async function HomePage() {
         <ProjectGrid projects={projects} />
       </main>
     </>
-  )
+  );
 }

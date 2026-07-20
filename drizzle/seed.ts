@@ -1,12 +1,12 @@
-import postgres from 'postgres'
-import { drizzle } from 'drizzle-orm/postgres-js'
-import { projects } from './schema'
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { projects } from './schema';
 
 async function seed() {
-  const sql = postgres(process.env.DATABASE_URL!)
-  const db = drizzle(sql)
+  const sql = postgres(process.env.DATABASE_URL!);
+  const db = drizzle(sql);
 
-  console.log('Seeding projects...')
+  console.log('Seeding projects...');
 
   await db
     .insert(projects)
@@ -18,13 +18,13 @@ async function seed() {
         icon: '🗄️',
       },
     ])
-    .onConflictDoNothing()
+    .onConflictDoNothing();
 
-  console.log('Seed complete.')
-  await sql.end()
+  console.log('Seed complete.');
+  await sql.end();
 }
 
 seed().catch((err) => {
-  console.error('Seed failed:', err)
-  process.exit(1)
-})
+  console.error('Seed failed:', err);
+  process.exit(1);
+});

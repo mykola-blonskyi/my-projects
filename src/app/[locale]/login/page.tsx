@@ -1,10 +1,10 @@
-import { getTranslations } from 'next-intl/server'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Button } from '@/shared/ui/button'
-import { signIn } from '@/features/auth/lib/auth'
+import { getTranslations } from 'next-intl/server';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
+import { Button } from '@/shared/ui/button';
+import { signIn } from '@/features/auth/lib/auth';
 
 export default async function LoginPage() {
-  const t = await getTranslations('LoginPage')
+  const t = await getTranslations('LoginPage');
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-8">
@@ -22,8 +22,8 @@ export default async function LoginPage() {
           <CardContent className="space-y-4">
             <form
               action={async () => {
-                'use server'
-                await signIn('google')
+                'use server';
+                await signIn('google');
               }}
             >
               <Button type="submit" className="w-full">
@@ -35,5 +35,5 @@ export default async function LoginPage() {
         </Card>
       </div>
     </main>
-  )
+  );
 }

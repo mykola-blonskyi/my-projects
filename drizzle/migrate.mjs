@@ -1,25 +1,25 @@
-import postgres from 'postgres'
-import { drizzle } from 'drizzle-orm/postgres-js'
-import { migrate } from 'drizzle-orm/postgres-js/migrator'
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
 
 async function run() {
-  const connectionString = process.env.DATABASE_URL
+  const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
-    console.error('DATABASE_URL is not set — cannot run migrations.')
-    process.exit(1)
+    console.error('DATABASE_URL is not set — cannot run migrations.');
+    process.exit(1);
   }
 
-  const sql = postgres(connectionString, { max: 1 })
-  const db = drizzle(sql)
+  const sql = postgres(connectionString, { max: 1 });
+  const db = drizzle(sql);
 
-  console.log('Running Drizzle migrations...')
-  await migrate(db, { migrationsFolder: './drizzle/migrations' })
-  console.log('Migrations complete.')
+  console.log('Running Drizzle migrations...');
+  await migrate(db, { migrationsFolder: './drizzle/migrations' });
+  console.log('Migrations complete.');
 
-  await sql.end()
+  await sql.end();
 }
 
 run().catch((err) => {
-  console.error('Migration failed:', err)
-  process.exit(1)
-})
+  console.error('Migration failed:', err);
+  process.exit(1);
+});

@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import { useLocale, useTranslations } from 'next-intl'
-import { useTransition } from 'react'
-import { locales, type Locale } from '@/shared/lib/i18n/config'
-import { setLocale } from '../actions/setLocale'
+import { useLocale, useTranslations } from 'next-intl';
+import { useTransition } from 'react';
+import { locales, type Locale } from '@/shared/lib/i18n/config';
+import { setLocale } from '../actions/setLocale';
 
 export function LocaleSwitcher() {
-  const locale = useLocale()
-  const t = useTranslations('LocaleSwitcher')
-  const [isPending, startTransition] = useTransition()
+  const locale = useLocale();
+  const t = useTranslations('LocaleSwitcher');
+  const [isPending, startTransition] = useTransition();
 
   function handleChange(event: React.ChangeEvent<HTMLSelectElement>) {
-    const nextLocale = event.target.value as Locale
+    const nextLocale = event.target.value as Locale;
     startTransition(() => {
-      setLocale(nextLocale)
-    })
+      setLocale(nextLocale);
+    });
   }
 
   return (
@@ -31,5 +31,5 @@ export function LocaleSwitcher() {
         </option>
       ))}
     </select>
-  )
+  );
 }

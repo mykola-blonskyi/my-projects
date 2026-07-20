@@ -1,10 +1,10 @@
-import { afterAll, afterEach } from 'vitest'
-import { resetDb, closeDb } from './db'
+import { afterAll, afterEach } from 'vitest';
+import { resetDb, closeDb } from './db';
 
 afterEach(async () => {
-  await resetDb()
-})
+  await resetDb();
+});
 
 afterAll(async () => {
-  await closeDb()
-})
+  await closeDb();
+});

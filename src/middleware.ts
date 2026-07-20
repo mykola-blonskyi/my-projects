@@ -1,12 +1,12 @@
-import { getToken } from 'next-auth/jwt'
-import createIntlMiddleware from 'next-intl/middleware'
-import { routing } from '@/shared/lib/i18n/routing'
-import { NextResponse, type NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt';
+import createIntlMiddleware from 'next-intl/middleware';
+import { routing } from '@/shared/lib/i18n/routing';
+import { NextResponse, type NextRequest } from 'next/server';
 
-const intlMiddleware = createIntlMiddleware(routing)
+const intlMiddleware = createIntlMiddleware(routing);
 
 export default async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl;
 
   // Pass through Next.js internals and API auth routes
   if (
@@ -16,14 +16,14 @@ export default async function middleware(request: NextRequest) {
     pathname.startsWith('/_vercel') ||
     /\.[^/]+$/.test(pathname)
   ) {
-    return NextResponse.next()
+    return NextResponse.next();
   }
 
   // Check if request is for the login page (any locale prefix)
-  const isLoginPage = /^\/[a-z]{2}\/login(\/)?$/.test(pathname) || pathname === '/login'
+  const isLoginPage = /^\/[a-z]{2}\/login(\/)?$/.test(pathname) || pathname === '/login';
 
   // Run intl middleware for all non-internal routes
-  const intlResponse = intlMiddleware(request)
+  const intlResponse = intlMiddleware(request);
 
   // Read the session directly from the JWT cookie instead of going through
   // Auth.js's auth() wrapper: that wrapper rewrites request.url to AUTH_URL's
@@ -36,17 +36,17 @@ export default async function middleware(request: NextRequest) {
     secret: process.env.AUTH_SECRET,
     cookieName: 'authjs.session-token',
     secureCookie: process.env.NODE_ENV === 'production',
-  })
+  });
 
   // If not authenticated and not on the login page, redirect to login
   if (!token && !isLoginPage) {
-    const locale = request.cookies.get('NEXT_LOCALE')?.value || routing.defaultLocale
-    return NextResponse.redirect(new URL(`/${locale}/login`, request.url))
+    const locale = request.cookies.get('NEXT_LOCALE')?.value || routing.defaultLocale;
+    return NextResponse.redirect(new URL(`/${locale}/login`, request.url));
   }
 
-  return intlResponse
+  return intlResponse;
 }
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
-}
+};

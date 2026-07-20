@@ -8,10 +8,7 @@ export async function GET(req: NextRequest) {
   // Validate query param
   const slug = req.nextUrl.searchParams.get('project');
   if (!slug) {
-    return NextResponse.json(
-      { error: 'Missing project param' },
-      { status: 400, headers },
-    );
+    return NextResponse.json({ error: 'Missing project param' }, { status: 400, headers });
   }
 
   // Check session

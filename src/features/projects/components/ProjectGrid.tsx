@@ -1,18 +1,16 @@
-import { useTranslations } from 'next-intl'
-import { ProjectCard } from './ProjectCard'
-import type { Project } from '../lib/queries'
+import { useTranslations } from 'next-intl';
+import { ProjectCard } from './ProjectCard';
+import type { Project } from '../lib/queries';
 
 interface ProjectGridProps {
-  projects: Project[]
+  projects: Project[];
 }
 
 export function ProjectGrid({ projects }: ProjectGridProps) {
-  const t = useTranslations('ProjectsPage')
+  const t = useTranslations('ProjectsPage');
 
   if (projects.length === 0) {
-    return (
-      <p className="text-center text-muted-foreground py-16">{t('emptyState')}</p>
-    )
+    return <p className="text-center text-muted-foreground py-16">{t('emptyState')}</p>;
   }
 
   return (
@@ -21,5 +19,5 @@ export function ProjectGrid({ projects }: ProjectGridProps) {
         <ProjectCard key={project.id} project={project} />
       ))}
     </div>
-  )
+  );
 }

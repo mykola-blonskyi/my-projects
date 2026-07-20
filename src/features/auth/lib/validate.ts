@@ -13,11 +13,7 @@ export async function validateProjectAccess(
   }
 
   // Look up the project by slug
-  const project = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.slug, projectSlug))
-    .limit(1);
+  const project = await db.select().from(projects).where(eq(projects.slug, projectSlug)).limit(1);
 
   if (!project.length) {
     return { allowed: false };
@@ -27,12 +23,7 @@ export async function validateProjectAccess(
   const access = await db
     .select()
     .from(projectAccess)
-    .where(
-      and(
-        eq(projectAccess.userId, userId),
-        eq(projectAccess.projectId, project[0].id),
-      ),
-    )
+    .where(and(eq(projectAccess.userId, userId), eq(projectAccess.projectId, project[0].id)))
     .limit(1);
 
   return { allowed: access.length > 0 };

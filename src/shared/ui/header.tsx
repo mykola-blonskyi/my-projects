@@ -1,14 +1,14 @@
-import Image from 'next/image'
-import { getTranslations } from 'next-intl/server'
-import { auth } from '@/features/auth/lib/auth'
-import { logout } from '@/features/auth/actions/logout'
-import { ThemeToggle } from '@/features/preferences/components/ThemeToggle'
-import { LocaleSwitcher } from '@/features/preferences/components/LocaleSwitcher'
-import { Button } from './button'
+import Image from 'next/image';
+import { getTranslations } from 'next-intl/server';
+import { auth } from '@/features/auth/lib/auth';
+import { logout } from '@/features/auth/actions/logout';
+import { ThemeToggle } from '@/features/preferences/components/ThemeToggle';
+import { LocaleSwitcher } from '@/features/preferences/components/LocaleSwitcher';
+import { Button } from './button';
 
 export async function Header() {
-  const [session, t] = await Promise.all([auth(), getTranslations('Nav')])
-  const user = session?.user
+  const [session, t] = await Promise.all([auth(), getTranslations('Nav')]);
+  const user = session?.user;
 
   return (
     <header className="border-b bg-background">
@@ -37,5 +37,5 @@ export async function Header() {
         </div>
       </div>
     </header>
-  )
+  );
 }

@@ -1,13 +1,13 @@
-import { useTranslations } from 'next-intl'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import type { Project } from '../lib/queries'
+import { useTranslations } from 'next-intl';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
+import type { Project } from '../lib/queries';
 
 interface ProjectCardProps {
-  project: Project
+  project: Project;
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-  const t = useTranslations('ProjectsPage')
+  const t = useTranslations('ProjectsPage');
 
   return (
     <a
@@ -37,5 +37,5 @@ export function ProjectCard({ project }: ProjectCardProps) {
         )}
       </Card>
     </a>
-  )
+  );
 }

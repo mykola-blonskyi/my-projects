@@ -48,11 +48,17 @@ ENV PORT=3000
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 
+# next/image's optimizer writes its cache under .next/cache at runtime, so
+# that directory must be owned by the user the server actually runs as -
+# otherwise it silently fails to cache (and can fail to serve) any image
+# fetched through /_next/image, e.g. Google avatar URLs.
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next
+
 # Next.js standalone server + its minimal traced node_modules
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # No public/ directory exists yet. If one is added later, uncomment:
-# COPY --from=builder /app/public ./public
+# COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Drizzle migration assets: SQL files + our small runtime migration script
 COPY --from=builder /app/drizzle/migrations ./drizzle/migrations

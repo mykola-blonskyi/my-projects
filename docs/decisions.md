@@ -413,3 +413,48 @@ skipping the same internal self-fetch optimization that was failing.
   established pattern for this app running self-hosted behind Traefik/Coolify
 - If `next-auth`/Next.js versions are upgraded and this host-detection inconsistency is fixed
   upstream, these call sites can stay as-is; `API_URL` remains a correct base either way
+
+---
+
+## ADR-013: Own `.next` by the runtime user in the Docker image
+
+Date: 2026-07-20
+
+Status: Accepted
+
+### Context
+After ADR-011/ADR-012 shipped and login redirects were confirmed working, production logs showed
+a new error: `Failed to write image to cache ... EACCES: permission denied, mkdir
+'/app/.next/cache'`. This was latent since the avatar fix (`next.config.ts`'s `images.remotePatterns`)
+started actually processing external images through `/_next/image` — before that, requests failed
+earlier at the hostname-allowlist check and never reached the cache-write step, so the underlying
+permission problem never surfaced.
+
+Root cause: the runtime stage `COPY`s `.next/standalone` and `.next/static` without `--chown`, so
+they land owned by `root`, then `USER nextjs` switches to a non-root user before the server ever
+runs. `next/image`'s optimizer creates `.next/cache` lazily at request time as whatever user the
+server runs as — `nextjs`, which had no write access to the root-owned `.next` directory. Verified
+directly: writing to `.next/cache` as `root` (image default before this fix) succeeds, but doing
+the same as `nextjs` failed until `.next` was explicitly `chown`'d to `nextjs:nodejs`.
+
+### Decision
+Explicitly create `.next/cache` and `chown -R nextjs:nodejs .next` before copying the standalone
+build in, and add `--chown=nextjs:nodejs` to the `COPY` commands that populate `.next` — matching
+Next.js's own documented standalone Docker template, which does this for exactly this reason.
+
+### Alternatives Considered
+- Running the container as `root` — removes the permission mismatch entirely, but drops a
+  deliberate security boundary (least-privilege runtime user) for a problem that has a small,
+  correct fix
+- Disabling Next.js's image optimization cache entirely (e.g. `unoptimized: true` on `next/image`)
+  — sidesteps the write, but also drops the actual optimization/resizing benefit for no reason
+  once the real fix is this small
+
+### Consequences
+- Any future addition to the runtime stage that copies into `.next` (or otherwise expects the
+  server to write under `/app`) should carry `--chown=nextjs:nodejs` or be created after the
+  `chown -R` step, or it will silently reintroduce this class of bug
+- This should have been caught by the local Docker testing done for ADR-011/ADR-012 and the avatar
+  fix (PR #28) — those tests ran the container the same way production does, but never exercised
+  an actual external image fetch through `/_next/image` end-to-end. Future Docker-based
+  verification of image-related changes should include that request explicitly

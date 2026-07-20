@@ -21,5 +21,5 @@ export async function GET() {
     .limit(1)
 
   const locale = user?.locale ?? 'en'
-  return NextResponse.redirect(new URL(`/${locale}/`, process.env.API_URL))
+  return NextResponse.redirect(new URL(`/${locale}/projects`, process.env.API_URL))
 }

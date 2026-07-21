@@ -566,3 +566,49 @@ involved at all.
   (e.g. `logout`'s `signOut`, ADR-012) don't have this problem the same way, since Next.js's
   same-origin self-fetch optimization is a separate code path with its own separate bug already
   fixed there
+
+---
+
+## ADR-016: `GoogleSignInButton` uses plain async/await, not `useTransition`
+
+Date: 2026-07-21
+
+Status: Accepted
+
+### Context
+ADR-015 shipped and fixed the client-side crash for a first-time sign-in, but "log in → log out →
+log in again" (in the same tab, and separately reproduced in a fresh Incognito window, ruling out
+any stale browser/session-cache theory) still hit the same `POST /api/auth/post-login 405` /
+"unexpected response" crash - just on the second sign-in rather than the first.
+
+The Network panel's Initiator call stack for the failing request showed it originating from
+`t.startTransition` (Next.js's internal chunk), tracing back through `onClick` in the compiled
+login page bundle - i.e. `GoogleSignInButton`'s own click handler, still executing *after* landing
+on `/projects`. The request initiator chain confirmed the sequence: callback → post-login →
+projects → (load Next.js's Server Actions runtime chunk) → a second, unprompted POST back to
+post-login. This matches a documented class of Next.js/React issue: Server Actions wrapped in
+`startTransition` that trigger a real navigation (here, `window.location.href` to an external URL)
+can get replayed by React/Next.js's transition machinery once it resumes on the new page -
+see vercel/next.js#55805 ("Server actions running twice in combination with
+useTransition/navigation") and #73536 ("Server action with redirect to external URL returns
+undefined to client").
+
+### Decision
+Drop `useTransition`/`startTransition` from `GoogleSignInButton` entirely, replacing it with a
+plain `async` `onClick` handler and a local `useState` for the pending/disabled state. There's no
+in-app UI to keep responsive during this click - the whole point is to leave the SPA via a real
+navigation - so a transition was never actually needed here, and removing it removes the API
+surface that's implicated in the replay behavior.
+
+### Alternatives Considered
+- Waiting for/pinning to a Next.js or React version with this fixed upstream — both linked issues
+  were open with no confirmed fix version at the time of writing; not worth blocking on
+- Manually guarding against a duplicate submission (e.g. a ref-based "already submitted" flag) —
+  would paper over the symptom without addressing why a transition replays a completed action;
+  removing the transition is the more direct fix and was already sufficient in testing
+
+### Consequences
+- Any other button that calls a Server Action and then does a real `window.location`/external
+  navigation (rather than an in-app state update) should follow this same plain-async pattern, not
+  `useTransition` — reserve `useTransition` for actions whose result is consumed by the *same* page
+  (e.g. `setLocale`, `setTheme`, which do stay in-app and are unaffected by this)

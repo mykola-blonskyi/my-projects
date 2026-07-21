@@ -22,6 +22,18 @@ Has `role = 'owner'` and unrestricted access to all projects. Always Mykola.
 An explicit database grant allowing a non-owner user to view and use a specific subdomain project.
 Stored in the `project_access` table as a `(user_id, project_id)` pair.
 
+### User Status
+
+A site-wide gate on a user's `users.status` field, separate from Project Access. One of
+`'pending'` (default for new non-owner sign-ins, never yet reviewed), `'approved'` (may use the
+site; still needs Project Access grants to see any specific project), or `'blocked'`
+(explicitly revoked, whether or not they were previously approved). Not consulted for the owner.
+
+### Awaiting Approval Page
+
+The page a `'pending'` or `'blocked'` user is redirected to for every route. Static, no
+interactivity — analogous to how `/login` is the one public route for unauthenticated users.
+
 ### JWT (JSON Web Token)
 
 The signed token issued by Auth.js after Google login. Stored in an HTTP-only cookie on

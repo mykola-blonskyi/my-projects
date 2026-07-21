@@ -671,3 +671,54 @@ needed now that sign-in isn't a Server Action.
 - Verified end-to-end via curl against a real build: fetching `/api/auth/csrf` then POSTing to
   `/api/auth/signin/google` with the resulting token returns a clean `302` with the correct
   `redirect_uri` — a genuine plain HTTP redirect, no Server Actions artifacts of any kind
+
+---
+
+## ADR-018: User approval status is checked against the database on every request
+
+Date: 2026-07-21
+
+Status: Accepted
+
+### Context
+Designing the settings UI for approving/blocking non-owner users (Business Rule 7) surfaced two
+things worth recording.
+
+First, a real Auth.js ordering fact: the `signIn` callback runs *before* the adapter creates the
+`users` row (confirmed by reading `@auth/core`'s callback handler — `handleAuthorized` runs, and
+only if it doesn't reject does `handleLoginOrRegister` create the user). Rejecting sign-in for a
+brand-new user via `signIn` returning `false` would mean their row is never created at all,
+leaving the owner nothing to approve later. So Google sign-in must always succeed regardless of
+`status`; the actual gate has to live after that, checked on every request the same place
+authentication itself is already checked (middleware).
+
+Second, and the real trade-off: middleware currently authenticates via `getToken()` (ADR-011),
+decoding the JWT only, with zero database access — a deliberate choice for a fast, DB-free
+middleware check. `role`/`locale`/`theme` are baked into that JWT at sign-in time and don't
+refresh until the next login (up to 24h later, per `session.maxAge`). The default here would be
+to treat `status` the same way and accept up to a 24h lag before a blocked user is actually locked
+out. That was offered as the recommended option; it was rejected in favor of checking `status`
+against the database on every request, so a blocked user is locked out on their very next
+request, not their next login.
+
+### Decision
+Middleware queries the `users` table for the current `status` on every request (for authenticated
+non-owner users), in addition to the existing JWT-based `getToken()` check. `role` continues to
+come from the JWT unchanged — this is scoped narrowly to `status`, not a general move away from
+JWT-trust for other claims.
+
+### Alternatives Considered
+- Baking `status` into the JWT like `role`/`locale`/`theme`, accepting up to ~24h lag before a
+  block takes effect — keeps middleware DB-free, consistent with ADR-011, but explicitly rejected:
+  for this specific gate, immediate lockout mattered more than avoiding a per-request DB call
+- Rejecting sign-in outright for non-`'approved'` users — ruled out entirely, not just
+  deprioritized, because of the `signIn`-runs-before-user-creation ordering above
+
+### Consequences
+- Middleware is no longer DB-free for authenticated requests — this is a deliberate, scoped
+  departure from ADR-011's design goal, not an accidental regression; ADR-011 remains correct for
+  why `getToken()` replaced the `auth()` wrapper, this just adds a second check alongside it
+- Given this app's actual scale (a personal project with a handful of trusted users), the added
+  per-request query is not expected to be a real performance concern; revisit if that changes
+- If `role` or other claims ever need the same immediate-revocation treatment, extend this same
+  per-request DB check rather than introducing a third, different mechanism

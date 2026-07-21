@@ -1,30 +1,33 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getCsrfToken } from 'next-auth/react';
 import { Button } from '@/shared/ui/button';
-import { signInWithGoogle } from '../actions/signInWithGoogle';
 
 interface GoogleSignInButtonProps {
   label: string;
 }
 
+// A plain HTML form POSTing straight to Auth.js's own /api/auth/signin/google,
+// not a Server Action: any Server Action invocation here gets wrapped in
+// Next.js's own internal startTransition, which replays once the resulting
+// external navigation lands on a page that also uses Server Actions (see
+// ADR-016 - dropping our own useTransition wasn't enough, since the wrapping
+// happens inside Next.js's framework code regardless). A native form submit
+// leaves no React/Next.js request-handling in the loop at all.
 export function GoogleSignInButton({ label }: GoogleSignInButtonProps) {
-  const [isPending, setIsPending] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
 
-  // Plain async/await, not useTransition/startTransition: this click leaves
-  // the SPA entirely via a real navigation, so there's no in-app UI update to
-  // batch - wrapping it in a transition caused React/Next.js to replay the
-  // action a second time after the window.location.href navigation (see
-  // ADR-016).
-  async function handleClick() {
-    setIsPending(true);
-    const url = await signInWithGoogle();
-    window.location.href = url;
-  }
+  useEffect(() => {
+    getCsrfToken().then(setCsrfToken);
+  }, []);
 
   return (
-    <Button type="button" className="w-full" onClick={handleClick} disabled={isPending}>
-      {label}
-    </Button>
+    <form method="POST" action="/api/auth/signin/google">
+      <input type="hidden" name="csrfToken" value={csrfToken ?? ''} />
+      <Button type="submit" className="w-full" disabled={!csrfToken}>
+        {label}
+      </Button>
+    </form>
   );
 }

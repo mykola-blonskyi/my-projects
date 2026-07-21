@@ -573,7 +573,7 @@ involved at all.
 
 Date: 2026-07-21
 
-Status: Accepted
+Status: Superseded by ADR-017 - insufficient on its own, see that entry's Context
 
 ### Context
 ADR-015 shipped and fixed the client-side crash for a first-time sign-in, but "log in → log out →
@@ -612,3 +612,62 @@ surface that's implicated in the replay behavior.
   navigation (rather than an in-app state update) should follow this same plain-async pattern, not
   `useTransition` — reserve `useTransition` for actions whose result is consumed by the *same* page
   (e.g. `setLocale`, `setTheme`, which do stay in-app and are unaffected by this)
+- Deployed and retested: the identical `POST /api/auth/post-login 405` crash still happened,
+  proving this fix was insufficient - see ADR-017
+
+---
+
+## ADR-017: Sign-in uses a plain HTML form to `/api/auth/signin/google`, not a Server Action at all
+
+Date: 2026-07-21
+
+Status: Accepted
+
+### Context
+ADR-016 shipped, deployed, and was retested live - the identical crash still happened. The
+Initiator call stack for the new failure still showed `t.startTransition`, but this time clearly
+inside Next.js's own framework chunk (`965-...js`), *not* app code - confirming `useTransition`
+was never the actual mechanism to fix. Every Server Action invocation is wrapped in an internal
+`startTransition` by Next.js's own client runtime, regardless of whether the calling component
+uses `useTransition` itself. The problem was never about *how* `GoogleSignInButton` called the
+action - it's inherent to using a Server Action at all when its result is an external navigation:
+Next.js's internal transition machinery appears to retain/replay the pending action once a
+*different* page that also uses Server Actions (here, `/projects`, via `logout`/`setLocale`/
+`setTheme`) loads the same shared framework chunk.
+
+Given the bug lives inside Next.js's own Server Actions runtime rather than anything reachable
+from application code, no combination of `redirect: false`, avoiding `useTransition`, or similar
+app-level adjustments can fix it - the only way to route around it entirely is to not invoke a
+Server Action for this interaction at all.
+
+### Decision
+`GoogleSignInButton` is now a plain `<form method="POST" action="/api/auth/signin/google">` -
+Auth.js's traditional (pre-Server-Actions) sign-in endpoint. `getCsrfToken()` (from
+`next-auth/react`, a plain client-side `fetch('/api/auth/csrf')` with no `SessionProvider`
+dependency) populates a hidden `csrfToken` field on mount; the submit button is disabled until
+that resolves. This is a real HTML form submission handled entirely by the browser - no
+`fetch()`, no Server Action, no Next.js request-handling in the loop at all, so there is no
+transition-machinery code path left to replay anything.
+
+`signInWithGoogle.ts` (the `redirect: false` Server Action from ADR-015) is removed - no longer
+needed now that sign-in isn't a Server Action.
+
+### Alternatives Considered
+- Everything in ADR-015/016's "Alternatives Considered" - all still apply and are now moot, since
+  those were framed as alternatives *to* the Server Action approach, which turned out to be the
+  actual defect
+- Waiting for a Next.js/React fix upstream — as in ADR-016, no confirmed fix version at time of
+  writing, and this bug appears architectural to how Server Actions + external navigation +
+  shared-chunk loading interact, not a simple patch
+
+### Consequences
+- Any future OAuth-provider button should follow this same plain-form-plus-CSRF pattern, not a
+  Server Action, specifically because the redirect target is external — this is now the
+  established exception to "prefer Server Actions" for this app
+- `logout`/`setLocale`/`setTheme` remain Server Actions and are unaffected: `setLocale`/`setTheme`
+  stay in-app (no external navigation involved), and `logout`'s redirect target, while same-origin,
+  goes through a different Next.js code path (the same-origin self-fetch optimization from
+  ADR-012) that doesn't exhibit this specific replay behavior
+- Verified end-to-end via curl against a real build: fetching `/api/auth/csrf` then POSTing to
+  `/api/auth/signin/google` with the resulting token returns a clean `302` with the correct
+  `redirect_uri` — a genuine plain HTTP redirect, no Server Actions artifacts of any kind

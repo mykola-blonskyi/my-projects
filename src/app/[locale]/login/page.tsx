@@ -1,7 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card';
-import { Button } from '@/shared/ui/button';
-import { signIn } from '@/features/auth/lib/auth';
+import { GoogleSignInButton } from '@/features/auth/components/GoogleSignInButton';
 
 export default async function LoginPage() {
   const t = await getTranslations('LoginPage');
@@ -20,16 +19,7 @@ export default async function LoginPage() {
             <CardDescription>{t('subtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form
-              action={async () => {
-                'use server';
-                await signIn('google');
-              }}
-            >
-              <Button type="submit" className="w-full">
-                {t('googleButton')}
-              </Button>
-            </form>
+            <GoogleSignInButton label={t('googleButton')} />
             <p className="text-xs text-muted-foreground text-center">{t('terms')}</p>
           </CardContent>
         </Card>

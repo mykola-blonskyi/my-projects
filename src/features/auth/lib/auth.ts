@@ -68,12 +68,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
-    async redirect({ url, baseUrl }) {
-      // After sign-in, go through post-login handler which reads locale from DB
-      if (url === baseUrl || url === `${baseUrl}/`) {
-        return `${baseUrl}/api/auth/post-login`;
-      }
-      if (url.startsWith(baseUrl)) return url;
+    async redirect({ baseUrl }) {
+      // signIn('google') is only ever called from the login page, so its default
+      // callback URL is always that referring page - always go through post-login
+      // instead of conditionally trusting it, or sign-in just lands back on /login.
       return `${baseUrl}/api/auth/post-login`;
     },
   },

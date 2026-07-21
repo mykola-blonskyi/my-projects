@@ -458,3 +458,54 @@ Next.js's own documented standalone Docker template, which does this for exactly
   fix (PR #28) — those tests ran the container the same way production does, but never exercised
   an actual external image fetch through `/_next/image` end-to-end. Future Docker-based
   verification of image-related changes should include that request explicitly
+
+---
+
+## ADR-014: `redirect` callback always routes to post-login, never trusts the referring URL
+
+Date: 2026-07-21
+
+Status: Accepted
+
+### Context
+After ADR-011/012/013 shipped, live login was still reported as "stuck on the login page" after a
+successful Google sign-in. Server-side redirect logic and the image-cache permission issue were
+both ruled out (confirmed via direct production testing with a synthetic session cookie). A HAR
+export of a real browser attempt gave the real answer: the callback
+(`/api/auth/callback/google`) redirected directly to `https://blonskyi.dev/en/login` — skipping
+`/api/auth/post-login` entirely, with no `?error=` param, meaning this wasn't Auth.js reporting a
+failure.
+
+Root cause: `login/page.tsx`'s form calls `signIn('google')` with no `redirectTo`/`callbackUrl`
+option, so Auth.js defaults the post-sign-in callback URL to the *referring page* - which is
+always the login page itself, since that's the only place `signIn()` is called from. The old
+`redirect` callback in `auth.ts` only special-cased `url === baseUrl` (root); for any other
+same-origin URL (including the login page) it fell through to `if (url.startsWith(baseUrl)) return
+url`, returning the login page URL as-is instead of routing through `/api/auth/post-login`. The
+session cookie was set correctly - the bug was purely about *where the browser was sent next* -
+so the login page itself, which doesn't check for an existing session before rendering, kept
+showing the sign-in form.
+
+### Decision
+Since `signIn('google')` is only ever invoked from the login page, there's no legitimate `url`
+value the `redirect` callback needs to honor - always return `${baseUrl}/api/auth/post-login`
+regardless of the referrer.
+
+### Alternatives Considered
+- Special-casing the login page's URL pattern (mirroring middleware's `isLoginPage` regex) in
+  addition to the `baseUrl` check — works, but adds regex-matching complexity for a callback that
+  has no reason to ever *not* go through post-login given this app's actual sign-in entry points
+- Passing an explicit `redirectTo` to `signIn('google')` in `login/page.tsx` instead of fixing the
+  callback — would also work, but the callback is the single choke point for every sign-in entry
+  point this app has or might add later, so fixing it there is more robust than fixing every call
+  site
+
+### Consequences
+- If a future feature needs sign-in to land somewhere other than the projects list (e.g.
+  preserving a deep link), the `redirect` callback will need to actually inspect `url` again -
+  revisit this ADR before reintroducing that logic, and reproduce the exact referrer-URL scenario
+  (not just root/empty cases) before trusting it
+- This was likely the true original cause of "stuck on login page," predating even the Error 1000
+  investigation (ADR-011/012) - those were real, independently-confirmed bugs, but this one was
+  never actually exercised by the curl-based reproductions in this session, since none of them
+  simulated `signIn()`'s real default callback-URL behavior from the login page

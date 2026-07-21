@@ -509,3 +509,60 @@ regardless of the referrer.
   investigation (ADR-011/012) - those were real, independently-confirmed bugs, but this one was
   never actually exercised by the curl-based reproductions in this session, since none of them
   simulated `signIn()`'s real default callback-URL behavior from the login page
+
+---
+
+## ADR-015: Sign-in button returns Google's URL via `redirect: false` instead of a Server Action redirect
+
+Date: 2026-07-21
+
+Status: Accepted
+
+### Context
+After ADR-014 shipped, live testing confirmed the core session/redirect bug was fixed - a manual
+refresh correctly landed on `/projects`. But a new client-side crash appeared mid-flow:
+`Uncaught Error: An unexpected response was received from the server`, alongside a `POST
+/api/auth/post-login 405 (Method Not Allowed)` in the console (that route only implements `GET`).
+
+Root cause: `login/page.tsx`'s sign-in button was a `<form action={fn}>` Server Action calling
+`signIn('google')`, which internally calls Next.js's `redirect()` to Google's external
+authorization URL. Next.js's Server Actions client runtime
+(`server-action-reducer.js`/`action-handler.js`) has a known rough edge handling redirects to
+external origins from within a Server Action - the real browser navigation through the whole
+OAuth round trip (Google → callback → post-login → projects) succeeds independently, but the
+*original* Server Action's own fetch/response-handling gets confused by it, eventually surfacing
+this exact error once it resolves against a stale URL.
+
+Traced `next-auth`'s server-side `signIn()` implementation (`src/lib/actions.ts`): it already
+supports `{ redirect: false }`, in which case it returns the resolved authorization URL as a
+plain string instead of calling `redirect()` itself. Verified directly: invoking the new Server
+Action against a real build returns a clean `200` with `Content-Type: text/x-component` and the
+Google URL as plain action-result data - no `x-action-redirect` header, no redirect handling
+involved at all.
+
+### Decision
+- New Server Action `signInWithGoogle()` (`src/features/auth/actions/signInWithGoogle.ts`) calls
+  `signIn('google', { redirect: false })` and returns the URL string.
+- New client component `GoogleSignInButton` (`src/features/auth/components/GoogleSignInButton.tsx`)
+  calls it via `useTransition`, then does `window.location.href = url` itself - a plain, real
+  browser navigation with no Server Actions machinery involved in the handoff at all.
+- `login/page.tsx` renders `GoogleSignInButton` instead of the old inline form/Server Action.
+
+### Alternatives Considered
+- Switching to a plain HTML `<form>` POSTing directly to `/api/auth/signin/google` with a CSRF
+  token (Auth.js's traditional/v4-era pattern) — works, but requires getting a valid CSRF token
+  onto the page from a Server Component without an extra client-side round trip, which is more
+  moving parts than needed here since `signIn()` already has a built-in escape hatch
+  (`redirect: false`) for exactly this situation
+- Leaving the Server Action as-is and trying to work around the crash (e.g. suppressing the
+  error) — doesn't address the actual defect, and the underlying Next.js redirect-handling
+  behavior for external URLs in Server Actions is the real rough edge to route around
+
+### Consequences
+- Any future OAuth-provider button (if more providers are added) should follow this same pattern -
+  `signIn(provider, { redirect: false })` from a Server Action, `window.location.href` from a
+  client component - rather than a plain form Server Action, to avoid reintroducing this exact bug
+- This is specifically about *external* redirects from Server Actions; internal same-app redirects
+  (e.g. `logout`'s `signOut`, ADR-012) don't have this problem the same way, since Next.js's
+  same-origin self-fetch optimization is a separate code path with its own separate bug already
+  fixed there

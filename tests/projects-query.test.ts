@@ -15,7 +15,10 @@ async function seedProjects() {
 
 describe('getProjectsForUser', () => {
   it('returns all projects for an owner', async () => {
-    const [user] = await testDb.insert(users).values({ email: 'owner@example.com', role: 'owner' }).returning();
+    const [user] = await testDb
+      .insert(users)
+      .values({ email: 'owner@example.com', role: 'owner' })
+      .returning();
     const seeded = await seedProjects();
 
     const result = await getProjectsForUser(user.id, 'owner');
@@ -24,7 +27,10 @@ describe('getProjectsForUser', () => {
   });
 
   it('returns only projects with a matching project_access row for a non-owner', async () => {
-    const [user] = await testDb.insert(users).values({ email: 'user@example.com', role: 'user' }).returning();
+    const [user] = await testDb
+      .insert(users)
+      .values({ email: 'user@example.com', role: 'user' })
+      .returning();
     const [sqlpanel, todo] = await seedProjects();
     await testDb.insert(projectAccess).values({ userId: user.id, projectId: todo.id });
 

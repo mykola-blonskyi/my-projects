@@ -76,31 +76,31 @@
    * Applied via class="theme-rose" on <html>
    * ============================================================ */
   .theme-rose {
-    --background: 351 100% 97%;       /* rose-50 */
-    --foreground: 336 69% 17%;        /* rose-950 */
+    --background: 351 100% 97%; /* rose-50 */
+    --foreground: 336 69% 17%; /* rose-950 */
 
-    --card: 355 100% 96%;             /* rose-50 slightly warm */
+    --card: 355 100% 96%; /* rose-50 slightly warm */
     --card-foreground: 336 69% 17%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 336 69% 17%;
 
-    --primary: 347 77% 50%;           /* rose-500 */
+    --primary: 347 77% 50%; /* rose-500 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 351 78% 92%;         /* rose-100 */
+    --secondary: 351 78% 92%; /* rose-100 */
     --secondary-foreground: 336 69% 17%;
 
     --muted: 351 78% 92%;
-    --muted-foreground: 338 28% 50%;  /* rose-500 desaturated */
+    --muted-foreground: 338 28% 50%; /* rose-500 desaturated */
 
-    --accent: 347 90% 88%;            /* rose-200 */
+    --accent: 347 90% 88%; /* rose-200 */
     --accent-foreground: 336 69% 17%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 347 77% 85%;            /* rose-200 */
+    --border: 347 77% 85%; /* rose-200 */
     --input: 347 77% 85%;
     --ring: 347 77% 50%;
 

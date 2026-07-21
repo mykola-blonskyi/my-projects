@@ -1,10 +1,10 @@
-import { redirect } from 'next/navigation'
+import { redirect } from 'next/navigation';
 
 interface LocaleRootPageProps {
-  params: Promise<{ locale: string }>
+  params: Promise<{ locale: string }>;
 }
 
 export default async function LocaleRootPage({ params }: LocaleRootPageProps) {
-  const { locale } = await params
-  redirect(`/${locale}/projects`)
+  const { locale } = await params;
+  redirect(`/${locale}/projects`);
 }

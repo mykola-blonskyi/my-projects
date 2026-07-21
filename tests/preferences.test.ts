@@ -15,10 +15,7 @@ const { setLocale } = await import('@/features/preferences/actions/setLocale');
 const { setTheme } = await import('@/features/preferences/actions/setTheme');
 
 async function seedUser() {
-  const [user] = await testDb
-    .insert(users)
-    .values({ email: 'user@example.com' })
-    .returning();
+  const [user] = await testDb.insert(users).values({ email: 'user@example.com' }).returning();
   return user;
 }
 

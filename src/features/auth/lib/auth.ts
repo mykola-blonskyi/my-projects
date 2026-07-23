@@ -3,7 +3,15 @@ import Google from 'next-auth/providers/google';
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { eq } from 'drizzle-orm';
 import { db } from '@/shared/lib/db';
-import { users, accounts, sessions, verificationTokens } from '../../../../drizzle/schema';
+import {
+  users,
+  accounts,
+  sessions,
+  verificationTokens,
+  type UserRole,
+  type UserLocale,
+  type UserTheme,
+} from '../../../../drizzle/schema';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -62,9 +70,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, token }) {
       if (token) {
         session.user.id = token.userId as string;
-        session.user.role = token.role as string;
-        session.user.locale = token.locale as string;
-        session.user.theme = token.theme as string;
+        session.user.role = token.role as UserRole;
+        session.user.locale = token.locale as UserLocale;
+        session.user.theme = token.theme as UserTheme;
       }
       return session;
     },

@@ -22,6 +22,40 @@
     "addProject": "Добавить проект",
     "viewProject": "Открыть проект"
   },
+  "AwaitingApprovalPage": {
+    "title": "Ожидание подтверждения",
+    "message": "Ваш аккаунт ожидает подтверждения. Вы получите доступ к проектам, как только владелец подтвердит ваш доступ."
+  },
+  "SettingsPage": {
+    "title": "Настройки",
+    "usersTab": "Пользователи",
+    "accessTab": "Доступ к проектам"
+  },
+  "SettingsUsersPage": {
+    "subtitle": "Подтверждайте или блокируйте доступ к сайту для вошедших пользователей.",
+    "columnName": "Имя",
+    "columnEmail": "Почта",
+    "columnStatus": "Статус",
+    "columnActions": "Действия",
+    "statusPending": "Ожидает",
+    "statusApproved": "Подтверждён",
+    "statusBlocked": "Заблокирован",
+    "approve": "Подтвердить",
+    "block": "Заблокировать",
+    "emptyState": "Пользователей пока нет."
+  },
+  "SettingsAccessPage": {
+    "subtitle": "Управляйте тем, какие проекты видит каждый подтверждённый пользователь.",
+    "columnName": "Имя",
+    "columnEmail": "Почта",
+    "columnProjects": "Проекты",
+    "columnActions": "Действия",
+    "noProjects": "Нет предоставленных проектов",
+    "editAccess": "Редактировать доступ",
+    "searchPlaceholder": "Поиск проектов...",
+    "noResults": "Проекты не найдены.",
+    "emptyState": "Подтверждённых пользователей пока нет."
+  },
   "Nav": {
     "home": "Главная",
     "projects": "Проекты",

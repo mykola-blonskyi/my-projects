@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { ThemeProvider } from '@/shared/ui/theme-provider';
 import { locales, type Locale } from '@/shared/lib/i18n/config';
 import { auth } from '@/features/auth/lib/auth';
+import { userThemeEnum } from '../../../drizzle/schema';
 import '../globals.css';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
@@ -37,7 +38,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
           attribute="class"
           defaultTheme={savedTheme}
           enableSystem={false}
-          themes={['light', 'dark', 'theme-rose']}
+          themes={[...userThemeEnum.enumValues]}
           disableTransitionOnChange
         >
           <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>

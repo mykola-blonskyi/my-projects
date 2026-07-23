@@ -7,8 +7,8 @@ import { db } from '@/shared/lib/db';
 import { users } from '../../../../drizzle/schema';
 import { locales, type Locale } from '@/shared/lib/i18n/config';
 
-export async function setLocale(locale: string) {
-  if (!locales.includes(locale as Locale)) return;
+export async function setLocale(locale: Locale) {
+  if (!locales.includes(locale)) return;
 
   const session = await auth();
   if (session?.user?.id) {

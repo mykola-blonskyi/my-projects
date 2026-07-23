@@ -3,12 +3,10 @@
 import { eq } from 'drizzle-orm';
 import { auth } from '@/features/auth/lib/auth';
 import { db } from '@/shared/lib/db';
-import { users } from '../../../../drizzle/schema';
+import { users, userThemeEnum, type UserTheme } from '../../../../drizzle/schema';
 
-const VALID_THEMES = ['light', 'dark', 'theme-rose'] as const;
-
-export async function setTheme(theme: string) {
-  if (!VALID_THEMES.includes(theme as (typeof VALID_THEMES)[number])) return;
+export async function setTheme(theme: UserTheme) {
+  if (!userThemeEnum.enumValues.includes(theme)) return;
 
   const session = await auth();
   if (!session?.user?.id) return;

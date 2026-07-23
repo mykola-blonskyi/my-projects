@@ -722,3 +722,66 @@ JWT-trust for other claims.
   per-request query is not expected to be a real performance concern; revisit if that changes
 - If `role` or other claims ever need the same immediate-revocation treatment, extend this same
   per-request DB check rather than introducing a third, different mechanism
+- Implementation note: middleware doesn't query the database *directly* - see ADR-019 for why and
+  what it does instead
+
+---
+
+## ADR-019: Middleware checks status via an internal loopback fetch, not a direct DB query
+
+Date: 2026-07-23
+
+Status: Accepted
+
+### Context
+Implementing ADR-018's per-request status check by importing `db` (drizzle-orm/postgres) directly
+into `middleware.ts` built successfully but failed at actual runtime in the real Docker image:
+`Error: The edge runtime does not support Node.js 'net' module`. Confirmed by testing directly
+(three seeded users with `pending`/`approved`/`blocked` status, real signed JWTs, hit against the
+real container) - every request through the gate 500'd.
+
+Next.js middleware runs in the Edge runtime by default; `postgres`'s driver needs raw TCP sockets
+(`net`/`tls`), which the Edge runtime doesn't provide. Node.js-runtime middleware exists, but
+requires Next.js 15.2-15.4 running on `next@canary` with an experimental flag (not recommended for
+production), or Next.js 15.5+ for stable support - this app is on `15.3.4`. Upgrading Next.js
+purely to unblock this one query was judged a bigger, riskier change than the status check itself
+warrants.
+
+### Decision
+The actual database query moved to a new Route Handler, `/api/auth/status` (Node.js runtime, not
+Edge-restricted - Route Handlers aren't subject to the same restriction middleware is). Middleware
+calls it via an internal loopback `fetch()` to `http://127.0.0.1:${PORT}/api/auth/status`,
+forwarding the incoming request's `Cookie` header so the route can resolve the session itself via
+`auth()`.
+
+The loopback fetch deliberately does **not** target `request.url`'s public hostname
+(`https://blonskyi.dev/...`). That would repeat ADR-011's exact bug in a new place: the origin
+server making a real outbound request to its own Cloudflare-proxied hostname, which either loops
+(Error 1000) or at minimum adds a real internet round-trip (DNS, TLS, Cloudflare) to every
+authenticated request for no reason, since the target is the same process on the same machine.
+`127.0.0.1:PORT` (the same port the standalone server binds, per the Dockerfile) reaches it
+directly with no network hop at all.
+
+Verified directly against the real Docker image with seeded `pending`/`approved`/`blocked` users
+and real signed JWTs: all four gate scenarios (pending → redirected, approved → 200, blocked →
+redirected, approved hitting the awaiting-approval page directly → redirected away) now pass.
+
+### Alternatives Considered
+- Upgrading to Next.js 15.5+ for stable Node.js middleware — would let middleware query the
+  database directly again, removing this extra hop entirely; not ruled out permanently, but a
+  real dependency upgrade with its own testing surface, out of scope for this feature
+- Using `next@canary` with `experimental.nodeMiddleware` — explicitly not recommended for
+  production per Next.js's own docs; rejected outright, not just deprioritized
+- Baking `status` into the JWT instead (avoiding any per-request check) — already rejected in
+  ADR-018 for the same reason as before: the user wants immediate lockout, not eventual
+
+### Consequences
+- Every authenticated non-owner request now costs one extra loopback HTTP call in addition to the
+  DB query the route handler makes - still no real network hop, but worth knowing if middleware
+  latency is ever profiled
+- If this app upgrades to Next.js 15.5+ later, revisit whether to move the query back into
+  middleware directly and remove `/api/auth/status` - it exists solely to route around this
+  version-specific Edge runtime constraint
+- Any other Edge-incompatible check middleware needs in the future should follow this same
+  loopback-fetch-to-a-Route-Handler pattern rather than reintroducing a Node-only import into
+  middleware.ts

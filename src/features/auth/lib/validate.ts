@@ -1,10 +1,10 @@
 import { db } from '@/shared/lib/db';
-import { projects, projectAccess } from '../../../../drizzle/schema';
+import { projects, projectAccess, type UserRole } from '../../../../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 
 export async function validateProjectAccess(
   userId: string,
-  role: string,
+  role: UserRole,
   projectSlug: string,
 ): Promise<{ allowed: boolean }> {
   // Owners have access to all projects

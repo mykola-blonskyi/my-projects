@@ -15,6 +15,27 @@
       "when": 1783970840408,
       "tag": "0001_add-email-verified-fix-accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784655515567,
+      "tag": "0002_keen_inhumans",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784655711289,
+      "tag": "0003_motionless_roulette",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784655818649,
+      "tag": "0004_colorful_gamma_corps",
+      "breakpoints": true
     }
   ]
 }

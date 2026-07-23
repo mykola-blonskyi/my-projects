@@ -1,6 +1,16 @@
-import { pgTable, text, timestamp, uuid, integer, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, text, timestamp, uuid, integer, primaryKey } from 'drizzle-orm/pg-core';
+import { locales } from '../src/shared/lib/i18n/config';
 
 // ─── Users ───────────────────────────────────────────────────────────────────
+
+export const userRoleEnum = pgEnum('user_role', ['user', 'owner']);
+export const userStatusEnum = pgEnum('user_status', ['pending', 'approved', 'blocked']);
+// locales is the i18n config's own source of truth (drives next-intl's routing too);
+// reused here rather than duplicated so the two can't drift apart.
+export const userLocaleEnum = pgEnum('user_locale', locales);
+// No pre-existing shared constant for themes - this enum is the source of truth,
+// consumed by ThemeToggle/layout/setTheme instead of each duplicating its own list.
+export const userThemeEnum = pgEnum('user_theme', ['light', 'dark', 'theme-rose']);
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -8,11 +18,17 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   emailVerified: timestamp('email_verified', { mode: 'date' }),
   image: text('image'),
-  role: text('role').default('user').notNull(),
-  locale: text('locale').default('en').notNull(),
-  theme: text('theme').default('light').notNull(),
+  role: userRoleEnum('role').default('user').notNull(),
+  status: userStatusEnum('status').default('pending').notNull(),
+  locale: userLocaleEnum('locale').default('en').notNull(),
+  theme: userThemeEnum('theme').default('light').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+export type UserRole = (typeof userRoleEnum.enumValues)[number];
+export type UserLocale = (typeof userLocaleEnum.enumValues)[number];
+export type UserTheme = (typeof userThemeEnum.enumValues)[number];
+export type UserStatus = (typeof userStatusEnum.enumValues)[number];
 
 // ─── Projects ────────────────────────────────────────────────────────────────
 

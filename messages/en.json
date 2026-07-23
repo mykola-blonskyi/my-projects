@@ -22,6 +22,40 @@
     "addProject": "Add project",
     "viewProject": "View project"
   },
+  "AwaitingApprovalPage": {
+    "title": "Awaiting approval",
+    "message": "Your account is pending approval. You'll be able to access your projects once the owner approves your access."
+  },
+  "SettingsPage": {
+    "title": "Settings",
+    "usersTab": "Users",
+    "accessTab": "Project access"
+  },
+  "SettingsUsersPage": {
+    "subtitle": "Approve or block site access for signed-in users.",
+    "columnName": "Name",
+    "columnEmail": "Email",
+    "columnStatus": "Status",
+    "columnActions": "Actions",
+    "statusPending": "Pending",
+    "statusApproved": "Approved",
+    "statusBlocked": "Blocked",
+    "approve": "Approve",
+    "block": "Block",
+    "emptyState": "No users yet."
+  },
+  "SettingsAccessPage": {
+    "subtitle": "Manage which projects each approved user can see.",
+    "columnName": "Name",
+    "columnEmail": "Email",
+    "columnProjects": "Projects",
+    "columnActions": "Actions",
+    "noProjects": "No projects granted",
+    "editAccess": "Edit access",
+    "searchPlaceholder": "Search projects...",
+    "noResults": "No projects found.",
+    "emptyState": "No approved users yet."
+  },
   "Nav": {
     "home": "Home",
     "projects": "Projects",

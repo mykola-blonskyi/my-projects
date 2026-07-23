@@ -14,8 +14,12 @@
 - `name` — from Google profile
 - `image` — avatar URL from Google profile
 - `role` — `'owner'` | `'user'` (owner bypasses all access checks)
+- `status` — `'pending'` | `'approved'` | `'blocked'` (site-wide access gate, distinct from
+  per-project `ProjectAccess`; see Business Rule 7). Owner rows are always effectively approved —
+  `status` is not consulted for `role = 'owner'`. New non-owner users default to `'pending'`
 - `locale` — `'en'` | `'ru'` | `'uk'` | `'es'` (user's preferred language)
-- `theme` — `'light'` | `'dark'` | `'rose'` (user's preferred color scheme)
+- `theme` — `'light'` | `'dark'` | `'theme-rose'` (user's preferred color scheme; the value is
+  `'theme-rose'`, not `'rose'` — it doubles as the CSS class name applied to `<html>`)
 - `created_at` — timestamp
 
 **Relationships:**

@@ -22,6 +22,40 @@
     "addProject": "Añadir proyecto",
     "viewProject": "Ver proyecto"
   },
+  "AwaitingApprovalPage": {
+    "title": "Esperando aprobación",
+    "message": "Tu cuenta está pendiente de aprobación. Podrás acceder a tus proyectos en cuanto el propietario apruebe tu acceso."
+  },
+  "SettingsPage": {
+    "title": "Configuración",
+    "usersTab": "Usuarios",
+    "accessTab": "Acceso a proyectos"
+  },
+  "SettingsUsersPage": {
+    "subtitle": "Aprueba o bloquea el acceso al sitio para los usuarios que han iniciado sesión.",
+    "columnName": "Nombre",
+    "columnEmail": "Correo",
+    "columnStatus": "Estado",
+    "columnActions": "Acciones",
+    "statusPending": "Pendiente",
+    "statusApproved": "Aprobado",
+    "statusBlocked": "Bloqueado",
+    "approve": "Aprobar",
+    "block": "Bloquear",
+    "emptyState": "Aún no hay usuarios."
+  },
+  "SettingsAccessPage": {
+    "subtitle": "Gestiona qué proyectos puede ver cada usuario aprobado.",
+    "columnName": "Nombre",
+    "columnEmail": "Correo",
+    "columnProjects": "Proyectos",
+    "columnActions": "Acciones",
+    "noProjects": "Sin proyectos otorgados",
+    "editAccess": "Editar acceso",
+    "searchPlaceholder": "Buscar proyectos...",
+    "noResults": "No se encontraron proyectos.",
+    "emptyState": "Aún no hay usuarios aprobados."
+  },
   "Nav": {
     "home": "Inicio",
     "projects": "Proyectos",

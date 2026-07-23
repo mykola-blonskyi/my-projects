@@ -22,6 +22,40 @@
     "addProject": "Додати проєкт",
     "viewProject": "Відкрити проєкт"
   },
+  "AwaitingApprovalPage": {
+    "title": "Очікування підтвердження",
+    "message": "Ваш обліковий запис очікує підтвердження. Ви отримаєте доступ до проєктів, як тільки власник підтвердить ваш доступ."
+  },
+  "SettingsPage": {
+    "title": "Налаштування",
+    "usersTab": "Користувачі",
+    "accessTab": "Доступ до проєктів"
+  },
+  "SettingsUsersPage": {
+    "subtitle": "Підтверджуйте або блокуйте доступ до сайту для користувачів, які увійшли в систему.",
+    "columnName": "Ім'я",
+    "columnEmail": "Пошта",
+    "columnStatus": "Статус",
+    "columnActions": "Дії",
+    "statusPending": "Очікує",
+    "statusApproved": "Підтверджено",
+    "statusBlocked": "Заблоковано",
+    "approve": "Підтвердити",
+    "block": "Заблокувати",
+    "emptyState": "Користувачів ще немає."
+  },
+  "SettingsAccessPage": {
+    "subtitle": "Керуйте тим, які проєкти бачить кожен підтверджений користувач.",
+    "columnName": "Ім'я",
+    "columnEmail": "Пошта",
+    "columnProjects": "Проєкти",
+    "columnActions": "Дії",
+    "noProjects": "Немає наданих проєктів",
+    "editAccess": "Редагувати доступ",
+    "searchPlaceholder": "Пошук проєктів...",
+    "noResults": "Проєктів не знайдено.",
+    "emptyState": "Підтверджених користувачів ще немає."
+  },
   "Nav": {
     "home": "Головна",
     "projects": "Проєкти",

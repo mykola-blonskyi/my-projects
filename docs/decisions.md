@@ -671,3 +671,117 @@ needed now that sign-in isn't a Server Action.
 - Verified end-to-end via curl against a real build: fetching `/api/auth/csrf` then POSTing to
   `/api/auth/signin/google` with the resulting token returns a clean `302` with the correct
   `redirect_uri` — a genuine plain HTTP redirect, no Server Actions artifacts of any kind
+
+---
+
+## ADR-018: User approval status is checked against the database on every request
+
+Date: 2026-07-21
+
+Status: Accepted
+
+### Context
+Designing the settings UI for approving/blocking non-owner users (Business Rule 7) surfaced two
+things worth recording.
+
+First, a real Auth.js ordering fact: the `signIn` callback runs *before* the adapter creates the
+`users` row (confirmed by reading `@auth/core`'s callback handler — `handleAuthorized` runs, and
+only if it doesn't reject does `handleLoginOrRegister` create the user). Rejecting sign-in for a
+brand-new user via `signIn` returning `false` would mean their row is never created at all,
+leaving the owner nothing to approve later. So Google sign-in must always succeed regardless of
+`status`; the actual gate has to live after that, checked on every request the same place
+authentication itself is already checked (middleware).
+
+Second, and the real trade-off: middleware currently authenticates via `getToken()` (ADR-011),
+decoding the JWT only, with zero database access — a deliberate choice for a fast, DB-free
+middleware check. `role`/`locale`/`theme` are baked into that JWT at sign-in time and don't
+refresh until the next login (up to 24h later, per `session.maxAge`). The default here would be
+to treat `status` the same way and accept up to a 24h lag before a blocked user is actually locked
+out. That was offered as the recommended option; it was rejected in favor of checking `status`
+against the database on every request, so a blocked user is locked out on their very next
+request, not their next login.
+
+### Decision
+Middleware queries the `users` table for the current `status` on every request (for authenticated
+non-owner users), in addition to the existing JWT-based `getToken()` check. `role` continues to
+come from the JWT unchanged — this is scoped narrowly to `status`, not a general move away from
+JWT-trust for other claims.
+
+### Alternatives Considered
+- Baking `status` into the JWT like `role`/`locale`/`theme`, accepting up to ~24h lag before a
+  block takes effect — keeps middleware DB-free, consistent with ADR-011, but explicitly rejected:
+  for this specific gate, immediate lockout mattered more than avoiding a per-request DB call
+- Rejecting sign-in outright for non-`'approved'` users — ruled out entirely, not just
+  deprioritized, because of the `signIn`-runs-before-user-creation ordering above
+
+### Consequences
+- Middleware is no longer DB-free for authenticated requests — this is a deliberate, scoped
+  departure from ADR-011's design goal, not an accidental regression; ADR-011 remains correct for
+  why `getToken()` replaced the `auth()` wrapper, this just adds a second check alongside it
+- Given this app's actual scale (a personal project with a handful of trusted users), the added
+  per-request query is not expected to be a real performance concern; revisit if that changes
+- If `role` or other claims ever need the same immediate-revocation treatment, extend this same
+  per-request DB check rather than introducing a third, different mechanism
+- Implementation note: middleware doesn't query the database *directly* - see ADR-019 for why and
+  what it does instead
+
+---
+
+## ADR-019: Middleware checks status via an internal loopback fetch, not a direct DB query
+
+Date: 2026-07-23
+
+Status: Accepted
+
+### Context
+Implementing ADR-018's per-request status check by importing `db` (drizzle-orm/postgres) directly
+into `middleware.ts` built successfully but failed at actual runtime in the real Docker image:
+`Error: The edge runtime does not support Node.js 'net' module`. Confirmed by testing directly
+(three seeded users with `pending`/`approved`/`blocked` status, real signed JWTs, hit against the
+real container) - every request through the gate 500'd.
+
+Next.js middleware runs in the Edge runtime by default; `postgres`'s driver needs raw TCP sockets
+(`net`/`tls`), which the Edge runtime doesn't provide. Node.js-runtime middleware exists, but
+requires Next.js 15.2-15.4 running on `next@canary` with an experimental flag (not recommended for
+production), or Next.js 15.5+ for stable support - this app is on `15.3.4`. Upgrading Next.js
+purely to unblock this one query was judged a bigger, riskier change than the status check itself
+warrants.
+
+### Decision
+The actual database query moved to a new Route Handler, `/api/auth/status` (Node.js runtime, not
+Edge-restricted - Route Handlers aren't subject to the same restriction middleware is). Middleware
+calls it via an internal loopback `fetch()` to `http://127.0.0.1:${PORT}/api/auth/status`,
+forwarding the incoming request's `Cookie` header so the route can resolve the session itself via
+`auth()`.
+
+The loopback fetch deliberately does **not** target `request.url`'s public hostname
+(`https://blonskyi.dev/...`). That would repeat ADR-011's exact bug in a new place: the origin
+server making a real outbound request to its own Cloudflare-proxied hostname, which either loops
+(Error 1000) or at minimum adds a real internet round-trip (DNS, TLS, Cloudflare) to every
+authenticated request for no reason, since the target is the same process on the same machine.
+`127.0.0.1:PORT` (the same port the standalone server binds, per the Dockerfile) reaches it
+directly with no network hop at all.
+
+Verified directly against the real Docker image with seeded `pending`/`approved`/`blocked` users
+and real signed JWTs: all four gate scenarios (pending → redirected, approved → 200, blocked →
+redirected, approved hitting the awaiting-approval page directly → redirected away) now pass.
+
+### Alternatives Considered
+- Upgrading to Next.js 15.5+ for stable Node.js middleware — would let middleware query the
+  database directly again, removing this extra hop entirely; not ruled out permanently, but a
+  real dependency upgrade with its own testing surface, out of scope for this feature
+- Using `next@canary` with `experimental.nodeMiddleware` — explicitly not recommended for
+  production per Next.js's own docs; rejected outright, not just deprioritized
+- Baking `status` into the JWT instead (avoiding any per-request check) — already rejected in
+  ADR-018 for the same reason as before: the user wants immediate lockout, not eventual
+
+### Consequences
+- Every authenticated non-owner request now costs one extra loopback HTTP call in addition to the
+  DB query the route handler makes - still no real network hop, but worth knowing if middleware
+  latency is ever profiled
+- If this app upgrades to Next.js 15.5+ later, revisit whether to move the query back into
+  middleware directly and remove `/api/auth/status` - it exists solely to route around this
+  version-specific Edge runtime constraint
+- Any other Edge-incompatible check middleware needs in the future should follow this same
+  loopback-fetch-to-a-Route-Handler pattern rather than reintroducing a Node-only import into
+  middleware.ts

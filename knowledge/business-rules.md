@@ -15,7 +15,9 @@ No `project_access` rows are needed for the owner.
 Any user with `role = 'user'` can only access projects for which a `project_access` row exists
 with their `user_id` and the target `project_id`.
 
-Access is managed by the owner directly in the database (via pgAdmin or a future admin UI).
+Access is managed by the owner via `/[locale]/settings/access` (only reachable by the owner —
+see Rule 7). Only users with `status = 'approved'` appear there; a user must be approved
+site-wide before the owner can grant them access to specific projects.
 
 ---
 
@@ -51,3 +53,22 @@ redirects to the correct locale URL with the correct theme applied.
 
 Authentication is exclusively via Google OAuth. There are no passwords, magic links,
 email codes, or other auth methods. Only Google accounts are accepted.
+
+---
+
+## Rule 7: Site-Wide Approval Gate
+
+Every non-owner user has a `status`: `'pending'` (default on first sign-in), `'approved'`, or
+`'blocked'`. Google sign-in itself always succeeds regardless of `status` (rejecting sign-in for
+a brand-new user would prevent their `users` row from ever being created, since Auth.js's
+`signIn` callback runs before the adapter creates the row — see ADR-018). Instead, every request
+is gated afterward: a user whose current `status` is not `'approved'` is redirected to the
+Awaiting Approval page for any route.
+
+`status` is checked against the database on every request, not cached in the JWT — a user the
+owner blocks is locked out on their very next request, not just their next login (see ADR-018
+for why this diverges from the JWT-only middleware check used for authentication itself).
+
+The owner (`role = 'owner'`) is never subject to this check.
+
+Only the owner can view or change any user's `status`, via `/[locale]/settings/users`.
